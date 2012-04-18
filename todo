@@ -1,0 +1,15 @@
+add "more like this" link - show all MLT results (and compute similarity)
+enable clustering on/off buttons
+run feeds + clustering on some schedule
+make clustering work incrementally (only fetch unclustered new docs)
+add paging controls
+remove "topics"/"sources" buttons on nav bar
+better way to visualize clusters
+  show word cloud per cluster?
+  show thumbnail per cluster?
+  show dendrogram / hierarchical clusters?
+document to describe architecture and show architecture diagram...
+!!! make feeds work incrementally - dont re-index if already exists...
+
+
+
