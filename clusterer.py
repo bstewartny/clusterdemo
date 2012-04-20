@@ -29,7 +29,7 @@ def cluster_docs(docs):
     update_doc(doc)
   index_commit()
 
-threshold=0.2
+threshold=0.30
 
 def update_doc(doc):
   index.add(doc,commit=False)
@@ -44,12 +44,18 @@ def compute_total(top_terms):
   return total
 
 def get_text(doc):
-  return doc['title']+' '+doc['title']+' '+doc['summary']+' '+doc['body']
+  text=doc['title']+' '+doc['title']+' '+doc['title']
+
+  #if doc.has_key('summary'):
+  #  text=text+' '+doc['summary']
+  #if doc.has_key('body'):
+  #  text=text+' '+doc['body']
+  return text
 
 def get_tokens(text):
   freqs={}
   for token in text.strip().lower().split():
-    if len(token)>2:
+    if len(token)>3:
       freqs[token]=freqs.get(token,0)+1
   return freqs
 
@@ -99,6 +105,7 @@ def get_cluster_id(doc,modified_docs):
     similarity=compute_similarity(similar_doc,vector)
     if similarity >= threshold:
       print 'found cluster, similarity='+str(similarity)
+      print doc['title'] + " === " + similar_doc['title'] + ' ('+str(similarity)+')'
       if similar_doc['clustered']=='false':
         if modified_docs.has_key(similar_doc['id']):
           prev_similar_doc=modified_docs[similar_doc['id']]

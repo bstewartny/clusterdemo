@@ -132,6 +132,22 @@ class SearchHandler(tornado.web.RequestHandler):
 
     self.render('templates/index.html',query=query,results=results)
 
+class MoreLikeThisHandler(tornado.web.RequestHandler):
+
+  def get(self):
+    id=self.get_argument('id')
+    mlt_results=get_handler('/mlt')('id:"'+id+'"')
+
+   
+    results=search([],None,None,'id:"'+id+'"',False,None)
+
+    match=results['results'].results[0]
+
+
+    results['results']=mlt_results
+
+    self.render('templates/mlt.html',match=match,query='',results=results,interestingTerms=mlt_results.interestingTerms)
+
 
 class TopicsHandler(tornado.web.RequestHandler):
 
@@ -159,7 +175,9 @@ application = tornado.web.Application([
               (r"/autosuggest",AutoSuggestHandler),
               (r"/topics",TopicsHandler),
               (r"/sources",SourcesHandler),
+              (r"/mlt",MoreLikeThisHandler),
               (r"/(.*)", SearchHandler)],
+              
               static_path=os.path.join(os.path.dirname(__file__),"static")
               )
 

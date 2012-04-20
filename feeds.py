@@ -98,22 +98,21 @@ def get_text_lynx(data):
 
 def get_page_text(url):
   txt=''
+  if url[-4:]=='.pdf':
+    return ''
   data=None
   try:
     print 'Get url:',url
     r=http.request('GET',url)
     data=r.data
-    print 'Got url:',url
     #data = urllib2.urlopen(url).read()
     if not data is None and len(data)>0:
-      print 'get summary'
       summary=Document(data).summary()
-      print 'got summary'
       return strip_html_tags(summary)
   except:
     print 'error getting text from url: '+url
-    if not data is None and len(data)>0:
-      return get_text_lynx(data)
+    #if not data is None and len(data)>0:
+    #  return get_text_lynx(data)
   return txt
 
 bad_chars="'+-&|!(){}[]^\"~*?:\\"
@@ -139,7 +138,6 @@ def create_id_slug(s):
   return compress_underscores(replace_bad_chars(s.strip().replace('http://','').replace('https://','')))	
 
 def strip_html_tags(html):
-  print 'strip_html_tags'
   # just get appended text elements from HTML
   try:
     text="".join(BeautifulSoup(html,convertEntities=BeautifulSoup.HTML_ENTITIES).findAll(text=True))
@@ -238,12 +236,11 @@ def analyze_feed_item(item):
   
   if not summary is None:
     summary=strip_html_tags(summary)
-    item["summary"]=clean_summary(summary)
+    item["summary"]=summary #clean_summary(summary)
 
   link=item['link']
   text=summary
-  if len(link)>0:
-    print 'Get extracted text: '+link
+  if len(link)>0 and (summary is not None) and len(summary)<210:
     text=get_page_text(link)
     if text is None or len(summary)>len(text):
       text=summary
@@ -251,10 +248,10 @@ def analyze_feed_item(item):
   else:
     item["body"]=summary
 
-  if item["summary"] is None or len(item["summary"])==0:
-    item["summary"]=clean_summary(text)
+  if (text is not None) and ((not item.has_key('summary')) or (item["summary"] is None) or (len(item["summary"])==0)):
+    item["summary"]=text[:200] #clean_summary(text)
     
-  text = item["title"] + " "+text
+  #text = item["title"] + " "+text
   #print 'get_entities'
   #entities=get_entities(text)
   #item['entity']=entities

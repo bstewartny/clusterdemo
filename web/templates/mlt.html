@@ -3,13 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    {% if len(query)>0 %}
-    <title>Cluster Demo - {{query}}</title>
-
-    {% else %}
-    <title>Cluster Demo</title>
-
-    {% end %}
+    <title>Cluster Demo - More Like This</title>
 
     <meta name="description" content="">
     <meta name="author" content="">
@@ -121,12 +115,9 @@
             <span class="divider">/</span>
         {% end %}
         </li>
-
-
         {% end %}
       </ul>
 
-      
       <div class="row-fluid">
         <div class="span3">
           <div class="well sidebar-nav">
@@ -146,29 +137,26 @@
         </div>
         <div class="span9">
           <div class="row-fluid">
-            <div class="span12">
-                  {% for result in results['results'] %}
-                  <h3><a class="title" href="{{escape(result['link'])}}">{{ result['title'] }}</a></h3>
+            <div class="span12 hero-unit">
+                  <h2>More Like This:</h2>
+                  <h3><a class="title" href="{{escape(match['link'])}}">{{ match['title'] }}</a></h3>
                   <blockquote>
-                    {% if result.has_key('summary') %}
-                       <p>{{result['summary'][:300]}}...</p>
+                    {% if match.has_key('summary') %}
+                       <p>{{match['summary'][:300]}}...</p>
                     {% end %}
-                    <small>{{result['feed']}}</small>
-                    <!-- TODO: show the related items underneath -->
-                    {% if result.has_key('similar') %}
-                    <p>
-                    {% for similar in result['similar'] %}
-                      <h4><a class="title" href="{{escape(similar['link'])}}">{{ similar['title'] }}</a></h4>
-                    {% end %}
-                    {% if result['clustered']=='true' and len(result['similar'])>4  %}
-                        <a href="/?clusterid={{escape(result['clusterid'])}}">show all related</a>
-                        {% end%}
-                        </p>
-                        {% end %}
-                      <a href="/mlt?id={{escape(result['id'])}}">More like this</a>
-                      </blockquote>
+                    <small>{{match['feed']}}</small>
+                  Interesting Terms: 
+                  {% for term in interestingTerms %}
+                    <a href="/?q={{escape(term)}}">{{term}}</a>&nbsp;
                   {% end %}
-            </div>
+                  </blockquote>
+                {% for result in results['results'] %}
+                  <h4><a class="title" href="{{escape(result['link'])}}">{{ result['title'] }}</a></h4>
+                  <blockquote>
+                    <small>{{result['feed']}}</small>
+                                      </blockquote>        
+                {% end %}
+                </div>
           </div>
         </div>
       </div>
