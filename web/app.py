@@ -40,8 +40,14 @@ def get_feeds(query):
   feeds_results=feedssearch(query)
   return [key for key,value in feeds_results.facet_counts['facet_fields']['feed'].iteritems()]
 
-def search(breadcrumbs,topic,source,query,clustered,clusterid):
+def get_categories(query):
+  feedssearch=get_handler('/categories')
+  feeds_results=feedssearch(query)
+  return [key for key,value in feeds_results.facet_counts['facet_fields']['category'].iteritems()]
+
+def search(breadcrumbs,topic,source,category,query,clustered,clusterid):
   facets=get_entities('*:*')
+  categories=get_categories('*:*')
   sources=get_feeds('*:*')
 
   handler=None
@@ -56,9 +62,11 @@ def search(breadcrumbs,topic,source,query,clustered,clusterid):
     else:
       query='+clusterid:'+clusterid
       
-  if (topic is not None) or (source is not None):
+  if (topic is not None) or (source is not None) or (category is not None):
     if len(query)>0:
       query='+('+query+')'
+    if category is not None:
+      query=query + ' +categorykey:'+category
     if topic is not None:
       query=query + ' +entitykey:'+topic
     if source is not None:
@@ -68,6 +76,7 @@ def search(breadcrumbs,topic,source,query,clustered,clusterid):
 
   topics=[{'name':facet,'key':feeds.create_slug(facet)} for facet in facets]
   sources=[{'name':source,'key':feeds.create_slug(source)} for source in sources]
+  categories=[{'name':source,'key':feeds.create_slug(source)} for source in categories]
 
 
   clustered_results=[]
@@ -82,7 +91,7 @@ def search(breadcrumbs,topic,source,query,clustered,clusterid):
 
 
 
-  return {'results':results,'topics':topics,'sources':sources,'breadcrumbs':breadcrumbs}
+  return {'results':results,'topics':topics,'sources':sources,'breadcrumbs':breadcrumbs,'categories':categories}
 
 class SearchHandler(tornado.web.RequestHandler):
   
@@ -104,6 +113,8 @@ class SearchHandler(tornado.web.RequestHandler):
     
     topic=None
     
+    category=None
+
     parts=args.split('/')
     
     if len(parts)>1:
@@ -115,6 +126,11 @@ class SearchHandler(tornado.web.RequestHandler):
         source=parts[1]
         if len(parts)==4:
           topic=parts[3]
+      elif parts[0]=='category':
+        category=parts[1]
+        if len(parts)==4:
+          source=parts[3]
+
   
     breadcrumbs=[]
     if len(parts)>1:
@@ -128,7 +144,7 @@ class SearchHandler(tornado.web.RequestHandler):
       breadcrumbs[len(breadcrumbs)-1]['active']=True
 
 
-    results=search(breadcrumbs,topic,source,query,clustered,clusterid)
+    results=search(breadcrumbs,topic,source,category,query,clustered,clusterid)
 
     self.render('templates/index.html',query=query,results=results)
 
@@ -139,7 +155,7 @@ class MoreLikeThisHandler(tornado.web.RequestHandler):
     mlt_results=get_handler('/mlt')('id:"'+id+'"')
 
    
-    results=search([],None,None,'id:"'+id+'"',False,None)
+    results=search([],None,None,None,'id:"'+id+'"',False,None)
 
     match=results['results'].results[0]
 

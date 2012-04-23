@@ -19,6 +19,20 @@ http=urllib3.PoolManager()
 
 INDEX_URL='http://localhost:8983/solr'
 
+
+existing_doc_ids={}
+
+def get_all_doc_ids():
+  ids={}
+
+  results=solr.SearchHandler(index,'/getids')()
+
+  for result in results.results:
+    ids[result['id']]=result['id']
+
+  return ids
+
+
 index=solr.Solr(INDEX_URL)
 
 invalid_entities=['tweet text',
@@ -230,7 +244,14 @@ def clean_summary(summary):
       return summary
 
 def analyze_feed_item(item):
-	
+
+  item["id"]=create_id_slug(get_attribute(item,["link","title"]))
+ 
+  if existing_doc_ids.has_key(item['id']):
+    return None
+  else:
+    existing_doc_ids[item['id']]=item['id']
+
   # strip HTML tags from summary/description
   summary=get_attribute(item,['summary','description'])
   
@@ -240,16 +261,16 @@ def analyze_feed_item(item):
 
   link=item['link']
   text=summary
-  if len(link)>0 and (summary is not None) and len(summary)<210:
-    text=get_page_text(link)
-    if text is None or len(summary)>len(text):
-      text=summary
-    item["body"]=text
-  else:
-    item["body"]=summary
+  #if len(link)>0 and (summary is not None) and len(summary)<210:
+  #  text=get_page_text(link)
+  #  if text is None or len(summary)>len(text):
+  #    text=summary
+  #  item["body"]=text
+  #else:
+  item["body"]=summary
 
-  if (text is not None) and ((not item.has_key('summary')) or (item["summary"] is None) or (len(item["summary"])==0)):
-    item["summary"]=text[:200] #clean_summary(text)
+  #if (text is not None) and ((not item.has_key('summary')) or (item["summary"] is None) or (len(item["summary"])==0)):
+  #  item["summary"]=text[:200] #clean_summary(text)
     
   #text = item["title"] + " "+text
   #print 'get_entities'
@@ -260,8 +281,8 @@ def analyze_feed_item(item):
   return item
 
 def copy_attribute(source,dest,name):
-  if name in source:
-    if not name in dest:
+  if source.has_key(name):
+    if not dest.has_key(name):
       dest[name]=source[name]
 
 def copy_attributes(source,dest,names):
@@ -273,14 +294,13 @@ def normalize_title(title):
 
 def create_solr_doc(item):
   doc={}
-  copy_attributes(item,doc,['title','summary','body','author','feed','feedlink','link','entity','entitykey'])
+  copy_attributes(item,doc,['id','title','summary','body','author','feed','feedlink','link','entity','entitykey'])
   d=get_item_date(item)
   doc['feedkey']=create_slug(doc['feed'])
   doc['clustered']='false'
   doc['clusterid']=normalize_title(doc['title'])
   if d is not None:
     doc["date"]=d
-  doc["id"]=create_id_slug(get_attribute(doc,["link","title"]))
   return doc
 
 def index_doc(doc):
@@ -294,8 +314,20 @@ def index_commit():
   index.commit()
 
 def process_item(feed,item):
+  
   copy_attributes(feed,item,['feed','name','rss'])
-  index_doc(create_solr_doc(analyze_feed_item(item)))
+  item=analyze_feed_item(item)
+  if item is not None:
+    doc=create_solr_doc(item)
+    if item.has_key('category'):
+      doc['category']=item['category']
+      doc['categorykey']=create_slug(doc['category'])
+    else:
+      if feed.has_key('category'):
+        doc['category']=feed['category']
+        doc['categorykey']=create_slug(doc['category'])
+        
+    index_doc(doc)
 
 def process_feed(feed):
   print 'processing feed: '+feed['feed'] +'...'
@@ -306,7 +338,7 @@ def process_feed(feed):
     count=count+1
     if count % 10 ==0:
       index_commit()
-  print 'processed '+str(count)+' items from feed.'
+  print 'processed '+str(count)+' items from feed: '+feed['rss']
   return count
 
 def process_feeds(feeds):
@@ -324,6 +356,8 @@ num_threads=4
 if __name__ == "__main__":
   feeds=feeddefs.feeds
   batch_size=len(feeds)/num_threads
+  existing_doc_ids=get_all_doc_ids()
+  print 'Got '+str(len(existing_doc_ids)) + ' existing doc ids'
   threads=[]
   for i in range(0,num_threads):
     batch=feeds[i*batch_size:(i*batch_size)+batch_size]

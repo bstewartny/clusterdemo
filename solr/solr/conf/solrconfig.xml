@@ -67,19 +67,19 @@
        the classpath, this is useful for including all jars in a
        directory.
     -->
-  <lib dir="../../contrib/extraction/lib" />
+    <!--<lib dir="./solr/lib" />-->
   <!-- When a regex is specified in addition to a directory, only the
        files in that directory which completely match the regex
        (anchored on both ends) will be included.
     -->
-  <lib dir="../../dist/" regex="apache-solr-cell-\d.*\.jar" />
-  <lib dir="../../dist/" regex="apache-solr-clustering-\d.*\.jar" />
+    <!--<lib dir="../../dist/" regex="apache-solr-cell-\d.*\.jar" />
+  <lib dir="./lib/" regex="apache-solr-clustering-\d.*\.jar" />
   <lib dir="../../dist/" regex="apache-solr-dataimporthandler-\d.*\.jar" />
-
+  -->
   <!-- If a dir option (with or without a regex) is used and nothing
        is found that matches, it will be ignored
     -->
-  <lib dir="../../contrib/clustering/lib/" />
+    <!--<lib dir="../../contrib/clustering/lib/" />-->
   <lib dir="/total/crap/dir/ignored" /> 
   <!-- an exact path can be used to specify a specific file.  This
        will cause a serious error to be logged if it can't be loaded.
@@ -803,6 +803,19 @@
   </requestHandler>
     
     
+  <requestHandler name="/categories" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+    </lst>
+    <lst name="invariants">
+       <str name="echoParams">explicit</str>
+       <int name="rows">0</int>
+        <int name="facet.mincount">4</int>
+        <str name="facet">on</str>
+        <str name="facet.field">category</str>
+        <int name="facet.limit">20</int>      
+      </lst>
+  </requestHandler>
   <requestHandler name="/feeds" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="q">*:*</str>
@@ -823,14 +836,24 @@
       <str name="q">*:*</str>
       <str name="defType">edismax</str>
       <str name="qf">title^5.0 summary^2.0 body^1.0</str>
+      <!--
+      <bool name="clustering">true</bool>
+      <str name="clustering.engine">default</str>
+      <bool name="clustering.results">true</bool>
+      <str name="carrot.title">title</str>
+      <str name="carrot.url">id</str>
+       <str name="carrot.snippet">summary</str>
+       <bool name="carrot.produceSummary">true</bool>
+       <bool name="carrot.outputSubClusters">false</bool>
+       --> 
     </lst>
     <lst name="invariants">
        <str name="echoParams">explicit</str>
       <str name="fq">clustered:true</str>
        <int name="rows">10</int>
         <int name="facet.limit">20</int>     
-        <str name="facet.field">feed,feedkey,entity,entitykey</str>
-        <str name="fl">id,date,link,title,entity,feed,summary,clustered,clusterid</str>
+        <str name="facet.field">category,feed,feedkey,entity,entitykey</str>
+        <str name="fl">id,category,date,link,title,entity,feed,summary,clustered,clusterid</str>
         <!-- field collapsing - get up to 5 items per cluster -->
         <str name="group">true</str>
         <str name="group.main">false</str>
@@ -839,6 +862,10 @@
 
 
       </lst>
+      <!--
+    <arr name="last-components">
+      <str>clustering</str>
+    </arr>-->
     </requestHandler>
 
 
@@ -873,6 +900,16 @@
 
 
 </requestHandler>
+<requestHandler name="/getids" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+    </lst>
+    <lst name="invariants">
+       <int name="rows">1000000</int>
+      <str name="fl">id</str>
+      </lst>
+</requestHandler>
 <requestHandler name="/searchunclustered" class="solr.SearchHandler">
 <lst name="defaults">
       <str name="q">*:*</str>
@@ -883,8 +920,8 @@
        <str name="echoParams">explicit</str>
        <int name="rows">10</int>
         <int name="facet.limit">20</int>     
-        <str name="facet.field">feed,feedkey,entity,entitykey</str>
-        <str name="fl">id,date,link,title,entity,feed,summary,clustered,clusterid</str>
+        <str name="facet.field">category,feed,feedkey,entity,entitykey</str>
+        <str name="fl">id,date,link,category,title,entity,feed,summary,clustered,clusterid</str>
       </lst>
 
 
@@ -1255,7 +1292,7 @@
           java -Dsolr.clustering.enabled=true -jar start.jar
     -->
   <searchComponent name="clustering" 
-                   enable="${solr.clustering.enabled:false}"
+                   enable="false"
                    class="solr.clustering.ClusteringComponent" >
     <!-- Declare an engine -->
     <lst name="engine">

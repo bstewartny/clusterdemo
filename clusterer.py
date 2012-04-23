@@ -29,7 +29,7 @@ def cluster_docs(docs):
     update_doc(doc)
   index_commit()
 
-threshold=0.30
+threshold=0.22
 
 def update_doc(doc):
   index.add(doc,commit=False)
@@ -68,6 +68,19 @@ def get_vector(doc):
 
 def compute_vector_similarity(a,b):
   # cosine similarity
+
+  if a is None:
+    return 0.0
+
+  if b is None:
+    return 0.0
+
+  if len(a)<5:
+    return 0.0
+
+  if len(b)<5:
+    return 0.0
+
   top=0.0
   a_bottom=0.0
   b_bottom=0.0
@@ -79,8 +92,11 @@ def compute_vector_similarity(a,b):
   for token,freq in a.iteritems():
     b_bottom=b_bottom+(freq * freq)
 
-  return top / (math.sqrt(a_bottom) * math.sqrt(b_bottom))
+  if(a_bottom>0 and b_bottom>0):
 
+    return top / (math.sqrt(a_bottom) * math.sqrt(b_bottom))
+  else:
+    return 0.0
 
 def compute_similarity(doc,vector):
   return compute_vector_similarity(get_vector(doc),vector)
@@ -99,10 +115,36 @@ def get_cluster_id(doc,modified_docs):
   top_terms=similar_results.interestingTerms
   vector=get_vector(doc)
 
+  title=doc['title']
+
+  if title[:5]=="Case:":
+    return doc['clusterid']
+  
+  if title[:17]=="Chamber judgement":
+    return doc['clusterid']
+  
   print 'got '+str(len(similar_docs)) +' similar docs...'
 
+  
+
+
+
+
   for similar_doc in similar_docs:
-    similarity=compute_similarity(similar_doc,vector)
+    similar_doc_title=similar_doc['title']
+    
+    if similar_doc_title[:5]=='Case:':
+      continue
+
+    if similar_doc_title[:17]=="Chamber judgement":
+      continue
+    
+    if similar_doc_title==title:
+      similarity=100.0
+    else:
+      similarity=compute_similarity(similar_doc,vector)
+    
+    
     if similarity >= threshold:
       print 'found cluster, similarity='+str(similarity)
       print doc['title'] + " === " + similar_doc['title'] + ' ('+str(similarity)+')'
