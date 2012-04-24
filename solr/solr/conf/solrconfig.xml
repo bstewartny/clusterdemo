@@ -790,15 +790,13 @@
   <requestHandler name="/entities" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="q">*:*</str>
-      <str name="fq">date:[NOW-14DAYS TO NOW]</str>
     </lst>
     <lst name="invariants">
        <str name="echoParams">explicit</str>
        <int name="rows">0</int>
-        <int name="facet.mincount">4</int>
         <str name="facet">on</str>
         <str name="facet.field">entity</str>
-        <int name="facet.limit">20</int>      
+        <int name="facet.limit">10</int>      
       </lst>
   </requestHandler>
     
@@ -810,24 +808,21 @@
     <lst name="invariants">
        <str name="echoParams">explicit</str>
        <int name="rows">0</int>
-        <int name="facet.mincount">4</int>
         <str name="facet">on</str>
         <str name="facet.field">category</str>
-        <int name="facet.limit">20</int>      
+        <int name="facet.limit">10</int>      
       </lst>
   </requestHandler>
   <requestHandler name="/feeds" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="q">*:*</str>
-      <str name="fq">date:[NOW-14DAYS TO NOW]</str>
     </lst>
     <lst name="invariants">
        <str name="echoParams">explicit</str>
        <int name="rows">0</int>
-        <int name="facet.mincount">4</int>
         <str name="facet">on</str>
         <str name="facet.field">feed</str>
-        <int name="facet.limit">20</int>      
+        <int name="facet.limit">10</int>      
       </lst>
   </requestHandler>
     
@@ -929,6 +924,7 @@
     <lst name="defaults">
       <str name="q">*:*</str>
       <str name="defType">edismax</str>
+      <str name="qf">title</str>
     </lst>
     <lst name="invariants">
        <str name="echoParams">explicit</str>
@@ -1464,7 +1460,7 @@
   <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
     <lst name="defaults">
       <str name="mlt.fl">clustertext</str>
-      <int name="mlt.mindf">1</int>
+      <int name="mlt.mindf">2</int>
       <int name="mlt.mintf">1</int>
       <int name="mlt.maxqt">12</int>
       <str name="mlt.interestingTerms">list</str>

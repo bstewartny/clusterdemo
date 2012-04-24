@@ -104,31 +104,22 @@
         <li>
         <a href="/">Home</a> <span class="divider">/</span>
         </li>
-        {% for breadcrumb in results['breadcrumbs'] %}
-        {% if breadcrumb['active'] %}
-            <li class="active">
-            {% else %}
-            <li>
-            {%end%}
-        <a href="{{breadcrumb['link']}}">{{breadcrumb['name']}}</a>
-        {% if not breadcrumb['active'] %}
-            <span class="divider">/</span>
-        {% end %}
+        <li>
+         More Like This
         </li>
-        {% end %}
       </ul>
 
       <div class="row-fluid">
         <div class="span3">
           <div class="well sidebar-nav">
             <ul class="nav nav-list">
-              <li class="nav-header">Popular Topics</li>
-                {% for topic in results['topics']%}   
-                  <li><a class="title" href="/topic/{{topic['key']}}">{{topic['name']}}</a></li>
+              <li class="nav-header">Top Categories</li>
+                {% for topic in results['categories']%}   
+                  <li><a class="title" href="/category/{{topic['key']}}">{{topic['name']}}</a></li>
                 {% end %}
             </ul>
             <ul class="nav nav-list">
-              <li class="nav-header">Popular Sources</li>
+              <li class="nav-header">Top Sources</li>
                 {% for source in results['sources']%}   
                   <li><a class="title" href="/source/{{source['key']}}">{{source['name']}}</a></li>
                 {% end %}
@@ -145,10 +136,6 @@
                        <p>{{match['summary'][:300]}}...</p>
                     {% end %}
                     <small>{{match['feed']}}</small>
-                  Interesting Terms: 
-                  {% for term in interestingTerms %}
-                    <a href="/?q={{escape(term)}}">{{term}}</a>&nbsp;
-                  {% end %}
                   </blockquote>
                 {% for result in results['results'] %}
                   <h4><a class="title" href="{{escape(result['link'])}}">{{ result['title'] }}</a></h4>

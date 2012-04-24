@@ -282,20 +282,14 @@ def get_cluster_id(doc,modified_docs):
   # find other docs with any of these good words
   similar_docs=fetch_docs_with_good_words(good_words)
 
-  #print "found "+str(len(similar_docs))+" similar docs"
-
   # see if any of them have at least a minimum number of good words
   for similar_doc in similar_docs:
     if similar_doc['id']==doc['id']:
       continue
-    
-    #if similar_doc['title']==doc['title']:
-    #  return similar_doc['clusterid']
     similar_good_words=get_good_words(similar_doc)
     if has_good_overlap(good_words,similar_good_words):
       print doc['title']+' ==> ' +similar_doc['title']
       return similar_doc['clusterid']
-
   return doc['clusterid']
 
 def get_cluster_id_old(doc,modified_docs):

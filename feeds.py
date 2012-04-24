@@ -336,8 +336,6 @@ def process_feed(feed):
   for item in rss["items"]:
     process_item(feed,item)
     count=count+1
-    if count % 10 ==0:
-      index_commit()
   print 'processed '+str(count)+' items from feed: '+feed['rss']
   return count
 
@@ -346,12 +344,13 @@ def process_feeds(feeds):
   print 'processing '+str(len(feeds))+' feeds...'
   for feed in feeds:
     total=total+process_feed(feed)
+    index_commit()
   
   index_commit()
   print 'processed '+str(total)+' total items.'
 
 
-num_threads=8
+num_threads=4
 
 if __name__ == "__main__":
   feeds=feeddefs.feeds
