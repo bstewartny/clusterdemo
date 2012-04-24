@@ -45,6 +45,44 @@ def get_categories(query):
   feeds_results=feedssearch(query)
   return [key for key,value in feeds_results.facet_counts['facet_fields']['category'].iteritems()]
 
+
+def searchclusters(breadcrumbs,topic,source,category,query,clustered,clusterid):
+
+  handler=get_handler('/searchclusters')
+ 
+  # get the top clusters for this query
+  orig_query=query
+
+  if (topic is not None) or (source is not None) or (category is not None):
+    if len(query)>0:
+      query='+('+query+')'
+    if category is not None:
+      query=query + ' +categorykey:'+category
+    if topic is not None:
+      query=query + ' +entitykey:'+topic
+    if source is not None:
+      query=query + ' +feedkey:'+source
+
+  results=handler(query)
+
+  # get top clusters (biggest ones...)
+  # create a new query using those clusters only...
+  clusters=[]
+
+  for cluster,count in results.facet_counts['facet_fields']['clusterid'].iteritems():
+    clusters.append('clusterid:"'+cluster+'"')
+
+  if len(clusters)>0:
+
+    cluster_query=" OR ".join(clusters)
+
+    if len(orig_query)>0:
+      cluster_query="(" + orig_query + ") AND ("+cluster_query+")"
+  else:
+    cluster_query=orig_query
+
+  return search(breadcrumbs,topic,source,category,cluster_query,clustered,clusterid)
+
 def search(breadcrumbs,topic,source,category,query,clustered,clusterid):
   facets=get_entities('*:*')
   categories=get_categories('*:*')
@@ -92,6 +130,62 @@ def search(breadcrumbs,topic,source,category,query,clustered,clusterid):
 
 
   return {'results':results,'topics':topics,'sources':sources,'breadcrumbs':breadcrumbs,'categories':categories}
+
+
+class ClustersHandler(tornado.web.RequestHandler):
+  
+  def get(self,args):
+    
+    query=self.get_argument('q','')
+
+    clustered=True
+
+    if self.get_argument('cluster','true')=='false':
+      clustered=False
+    
+    clusterid=self.get_argument('clusterid',None)
+
+    if clusterid is not None:
+      clustered=False
+
+    source=None
+    
+    topic=None
+    
+    category=None
+
+    parts=args.split('/')
+    
+    if len(parts)>1:
+      if parts[0]=='topic':
+        topic=parts[1]
+        if len(parts)==4:
+          source=parts[3]
+      elif parts[0]=='source':
+        source=parts[1]
+        if len(parts)==4:
+          topic=parts[3]
+      elif parts[0]=='category':
+        category=parts[1]
+        if len(parts)==4:
+          source=parts[3]
+
+  
+    breadcrumbs=[]
+    if len(parts)>1:
+      breadcrumbs.append({'name':parts[1],'link':'/'+parts[0]+'/'+parts[1],'active':False})
+      if len(parts)==4:
+        breadcrumbs.append({'name':parts[3],'link':'/'+parts[0]+'/'+parts[1]+'/'+parts[2]+'/'+parts[3],'active':False})
+    if len(query)>0:
+      breadcrumbs.append({'name':query,'link':self.request.uri,'active':False})
+
+    if len(breadcrumbs)>0:
+      breadcrumbs[len(breadcrumbs)-1]['active']=True
+
+
+    results=searchclusters(breadcrumbs,topic,source,category,query,clustered,clusterid)
+
+    self.render('templates/clusters.html',query=query,results=results)
 
 class SearchHandler(tornado.web.RequestHandler):
   
@@ -179,6 +273,12 @@ class SourcesHandler(tornado.web.RequestHandler):
     sources=get_sources()
     self.render('templates/sources.html',sources=sources)
 
+class CategoriesHandler(tornado.web.RequestHandler):
+
+  def get(self):
+    sources=get_sources()
+    self.render('templates/categories.html',sources=sources)
+
 class AutoSuggestHandler(tornado.web.RequestHandler):
 
   def get(self):
@@ -193,6 +293,8 @@ application = tornado.web.Application([
               (r"/autosuggest",AutoSuggestHandler),
               (r"/topics",TopicsHandler),
               (r"/sources",SourcesHandler),
+              (r"/categories",CategoriesHandler),
+              (r"/clusters/(.*)",ClustersHandler),
               (r"/mlt",MoreLikeThisHandler),
               (r"/(.*)", SearchHandler)],
               

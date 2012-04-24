@@ -831,44 +831,68 @@
       </lst>
   </requestHandler>
     
-    <requestHandler name="/searchclustered" class="solr.SearchHandler">
+    
+    <requestHandler name="/searchcarrotclustered" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="q">*:*</str>
       <str name="defType">edismax</str>
       <str name="qf">title^5.0 summary^2.0 body^1.0</str>
-      <!--
       <bool name="clustering">true</bool>
       <str name="clustering.engine">default</str>
       <bool name="clustering.results">true</bool>
       <str name="carrot.title">title</str>
       <str name="carrot.url">id</str>
-       <str name="carrot.snippet">summary</str>
-       <bool name="carrot.produceSummary">true</bool>
+      <!--<str name="carrot.snippet">summary</str>-->
+      <!--<bool name="carrot.produceSummary">true</bool>-->
        <bool name="carrot.outputSubClusters">false</bool>
-       --> 
     </lst>
     <lst name="invariants">
        <str name="echoParams">explicit</str>
       <str name="fq">clustered:true</str>
-       <int name="rows">10</int>
+       <int name="rows">100</int>
         <int name="facet.limit">20</int>     
         <str name="facet.field">category,feed,feedkey,entity,entitykey</str>
         <str name="fl">id,category,date,link,title,entity,feed,summary,clustered,clusterid</str>
-        <!-- field collapsing - get up to 5 items per cluster -->
-        <str name="group">true</str>
-        <str name="group.main">false</str>
-        <str name="group.field">clusterid</str>
-        <int name="group.limit">5</int>
 
 
       </lst>
-      <!--
     <arr name="last-components">
       <str>clustering</str>
-    </arr>-->
+    </arr>
+    </requestHandler>
+    
+    <requestHandler name="/searchclustered" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+      <str name="qf">title^5.0 summary^2.0 body^1.0</str>
+    </lst>
+    <lst name="invariants">
+       <str name="echoParams">explicit</str>
+       <!--<str name="fq">clustered:true</str>-->
+       <int name="rows">10</int>
+        <int name="facet.limit">10</int>     
+        <str name="facet.field">category,feed,entity,entitykey</str>
+        <str name="fl">id,category,date,link,title,entity,feed,summary,clustered,clusterid</str>
+        <str name="group">true</str>
+        <str name="group.main">false</str>
+        <str name="group.field">clusterid</str>
+        <int name="group.limit">4</int>
+      </lst>
     </requestHandler>
 
-
+    <requestHandler name="/searchclusters" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+      <str name="qf">title^5.0 summary^2.0 body^1.0</str>
+       <str name="echoParams">explicit</str>
+       <int name="rows">0</int>
+       <bool name="facet">true</bool>
+       <int name="facet.limit">10</int>     
+        <str name="facet.field">clusterid</str>
+      </lst>
+    </requestHandler>
 
 
 <requestHandler name="/similar" class="solr.SearchHandler">
@@ -889,6 +913,8 @@
     <lst name="defaults">
       <str name="q">*:*</str>
       <str name="defType">edismax</str>
+      <str name=""></str>
+      <str name="qf">title</str>
     </lst>
     <lst name="invariants">
        <str name="echoParams">explicit</str>
@@ -897,9 +923,46 @@
        <!--<str name="fq">clustered:false</str>-->
       <str name="fl">*</str>
       </lst>
-
-
 </requestHandler>
+
+<requestHandler name="/fetchsimilardocs" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+    </lst>
+    <lst name="invariants">
+       <str name="echoParams">explicit</str>
+       <int name="rows">10</int>
+      <str name="fl">id,clusterid,title,feed</str>
+      </lst>
+    </requestHandler>
+
+<requestHandler name="/feeddocs" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+    </lst>
+    <lst name="invariants">
+       <str name="echoParams">explicit</str>
+       <int name="rows">1000</int>
+       <str name="sort">date desc</str>
+      <str name="fl">id,title,date,feed,clusterid</str>
+      </lst>
+</requestHandler>
+
+<requestHandler name="/indexdocs" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+    </lst>
+    <lst name="invariants">
+       <str name="echoParams">explicit</str>
+       <int name="rows">10000</int>
+       <str name="sort">date desc</str>
+      <str name="fl">id,title,date,feed,clusterid</str>
+      </lst>
+</requestHandler>
+
 <requestHandler name="/getids" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="q">*:*</str>
@@ -915,11 +978,10 @@
       <str name="q">*:*</str>
       <str name="defType">edismax</str>
       <str name="qf">title^5.0 summary^2.0 body^1.0</str>
-    </lst>
-    <lst name="invariants">
        <str name="echoParams">explicit</str>
        <int name="rows">10</int>
-        <int name="facet.limit">20</int>     
+       <bool name="facet">true</bool>
+       <int name="facet.limit">20</int>     
         <str name="facet.field">category,feed,feedkey,entity,entitykey</str>
         <str name="fl">id,date,link,category,title,entity,feed,summary,clustered,clusterid</str>
       </lst>
@@ -1292,7 +1354,7 @@
           java -Dsolr.clustering.enabled=true -jar start.jar
     -->
   <searchComponent name="clustering" 
-                   enable="false"
+                   enable="true"
                    class="solr.clustering.ClusteringComponent" >
     <!-- Declare an engine -->
     <lst name="engine">
@@ -1402,9 +1464,9 @@
   <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
     <lst name="defaults">
       <str name="mlt.fl">clustertext</str>
-      <int name="mlt.mindf">2</int>
-      <int name="mlt.mintf">2</int>
-      <int name="mlt.maxqt">8</int>
+      <int name="mlt.mindf">1</int>
+      <int name="mlt.mintf">1</int>
+      <int name="mlt.maxqt">12</int>
       <str name="mlt.interestingTerms">list</str>
       <bool name="mlt.boost">true</bool>
     </lst>
