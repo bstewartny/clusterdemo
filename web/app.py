@@ -157,8 +157,10 @@ class MoreLikeThisHandler(tornado.web.RequestHandler):
    
     results=search([],None,None,None,'id:"'+id+'"',False,None)
 
-    match=results['results'].results[0]
-
+    if len(results['results'].results)>0:
+      match=results['results'].results[0]
+    else:
+      match=None
 
     results['results']=mlt_results
 

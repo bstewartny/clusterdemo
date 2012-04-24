@@ -1,5 +1,6 @@
 import solr
 import math
+import re
 
 INDEX_URL='http://localhost:8983/solr'
 SEARCH_URL='http://localhost:8983/solr'
@@ -60,9 +61,23 @@ def get_tokens(text):
   return freqs
 
 def get_vector(doc):
-  freqs=get_tokens(get_text(doc))
+
+  text=doc['clustertext']
+
+  text=" ".join(text)
+
+  words=re.split('\W+',text.strip().lower())
+
+  shingles=[[" ".join(words[i:i+n]) for i in range(len(words)- n+1)] for n in range(2,3)]
+
+  flattened=[shingle for sublist in shingles for shingle in sublist]
+
+  freqs={}
+  for shingle in flattened:
+    freqs[shingle]=freqs.get(shingle,0)+1
+  
   for key in freqs.keys():
-    freqs[key]=math.log(freqs[key]+1)
+    freqs[key]=math.log(freqs[key] * len(key))
 
   return freqs
 

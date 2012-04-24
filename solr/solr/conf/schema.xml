@@ -66,6 +66,16 @@
        org.apache.solr.analysis package.
     -->
 
+  <fieldType name="shingle" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>  
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.ShingleFilterFactory" minShingleSize="2" maxShingleSize="2" outputUnigrams="false" outputUnigramsIfNoShingles="false"/>
+    </analyzer>
+  </fieldType>
+
+
+
     <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
 
@@ -511,6 +521,7 @@
    <field name="category" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="categorykey" type="string" indexed="true" stored="true" multiValued="true"/>
 
+   <field name="clustertext" type="shingle" indexed="true" stored="true" multiValued="true"/>
    
       <!-- catchall field, containing all other searchable text fields (implemented
         via copyField further on in this schema  -->
@@ -589,6 +600,11 @@
 
    <copyField source="summary" dest="text"/>
    <copyField source="body" dest="text"/>
+
+   <copyField source="title" dest="clustertext"/>
+   <copyField source="title" dest="clustertext"/>
+   <copyField source="title" dest="clustertext"/>
+   <copyField source="summary" dest="clustertext"/>
 
 <!--
    <copyField source="author" dest="text"/>

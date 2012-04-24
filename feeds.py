@@ -351,7 +351,7 @@ def process_feeds(feeds):
   print 'processed '+str(total)+' total items.'
 
 
-num_threads=4
+num_threads=8
 
 if __name__ == "__main__":
   feeds=feeddefs.feeds

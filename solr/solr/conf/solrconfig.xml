@@ -1401,10 +1401,9 @@
 
   <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
     <lst name="defaults">
-      <str name="mlt.fl">text</str>
+      <str name="mlt.fl">clustertext</str>
       <int name="mlt.mindf">2</int>
       <int name="mlt.mintf">2</int>
-      <int name="mlt.minwl">4</int>
       <int name="mlt.maxqt">8</int>
       <str name="mlt.interestingTerms">list</str>
       <bool name="mlt.boost">true</bool>
