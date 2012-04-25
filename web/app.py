@@ -81,7 +81,45 @@ def searchclusters(breadcrumbs,topic,source,category,query,clustered,clusterid):
   else:
     cluster_query=orig_query
 
-  return search(breadcrumbs,topic,source,category,cluster_query,clustered,clusterid)
+  return search(breadcrumbs,topic,source,category,cluster_query,True,None)
+
+def searchcarrot(breadcrumbs,topic,source,category,query,clustered,clusterid):
+  facets=get_entities('*:*')
+  categories=get_categories('*:*')
+  sources=get_feeds('*:*')
+
+  handler=get_handler('/searchcarrotclustered')
+ 
+  if (topic is not None) or (source is not None) or (category is not None):
+    if len(query)>0:
+      query='+('+query+')'
+    if category is not None:
+      query=query + ' +categorykey:'+category
+    if topic is not None:
+      query=query + ' +entitykey:'+topic
+    if source is not None:
+      query=query + ' +feedkey:'+source
+
+  results=handler(query)
+
+  topics=[{'name':facet,'key':feeds.create_slug(facet)} for facet in facets]
+  sources=[{'name':source,'key':feeds.create_slug(source)} for source in sources]
+  categories=[{'name':source,'key':feeds.create_slug(source)} for source in categories]
+  
+  clustered_results=[]
+  doc_map={}
+  for result in results.results:
+    doc_map[result['id']]=result
+
+  for carrot_cluster in results.clusters:
+    docids=carrot_cluster['docs']
+    docs=[]
+    for docid in docids:
+      docs.append(doc_map[docid])  
+    label=" ".join(carrot_cluster['labels'])
+    clustered_results.append({'label':label,'docs':docs})
+
+  return {'clusters':clustered_results,'topics':topics,'sources':sources,'breadcrumbs':breadcrumbs,'categories':categories}
 
 def search(breadcrumbs,topic,source,category,query,clustered,clusterid):
   facets=get_entities('*:*')
@@ -127,32 +165,24 @@ def search(breadcrumbs,topic,source,category,query,clustered,clusterid):
         root['similar']=doclist[1:]
     results=clustered_results
 
-
-
   return {'results':results,'topics':topics,'sources':sources,'breadcrumbs':breadcrumbs,'categories':categories}
 
 
-class ClustersHandler(tornado.web.RequestHandler):
-  
+class CarrotHandler(tornado.web.RequestHandler):
+ 
   def get(self,args):
     
     query=self.get_argument('q','')
-
-    clustered=True
-
-    if self.get_argument('cluster','true')=='false':
-      clustered=False
-    
-    clusterid=self.get_argument('clusterid',None)
-
-    if clusterid is not None:
-      clustered=False
 
     source=None
     
     topic=None
     
     category=None
+
+    if args is not None and len(args)>0:
+      if args[:1]=='/':
+        args=args[1:]
 
     parts=args.split('/')
     
@@ -169,7 +199,6 @@ class ClustersHandler(tornado.web.RequestHandler):
         category=parts[1]
         if len(parts)==4:
           source=parts[3]
-
   
     breadcrumbs=[]
     if len(parts)>1:
@@ -182,8 +211,54 @@ class ClustersHandler(tornado.web.RequestHandler):
     if len(breadcrumbs)>0:
       breadcrumbs[len(breadcrumbs)-1]['active']=True
 
+    results=searchcarrot(breadcrumbs,topic,source,category,query,True,None)
 
-    results=searchclusters(breadcrumbs,topic,source,category,query,clustered,clusterid)
+    self.render('templates/carrot.html',query=query,results=results)
+
+class ClustersHandler(tornado.web.RequestHandler):
+ 
+  def get(self,args):
+    
+    query=self.get_argument('q','')
+
+    source=None
+    
+    topic=None
+    
+    category=None
+
+    if args is not None and len(args)>0:
+      if args[:1]=='/':
+        args=args[1:]
+
+    parts=args.split('/')
+    
+    if len(parts)>1:
+      if parts[0]=='topic':
+        topic=parts[1]
+        if len(parts)==4:
+          source=parts[3]
+      elif parts[0]=='source':
+        source=parts[1]
+        if len(parts)==4:
+          topic=parts[3]
+      elif parts[0]=='category':
+        category=parts[1]
+        if len(parts)==4:
+          source=parts[3]
+  
+    breadcrumbs=[]
+    if len(parts)>1:
+      breadcrumbs.append({'name':parts[1],'link':'/'+parts[0]+'/'+parts[1],'active':False})
+      if len(parts)==4:
+        breadcrumbs.append({'name':parts[3],'link':'/'+parts[0]+'/'+parts[1]+'/'+parts[2]+'/'+parts[3],'active':False})
+    if len(query)>0:
+      breadcrumbs.append({'name':query,'link':self.request.uri,'active':False})
+
+    if len(breadcrumbs)>0:
+      breadcrumbs[len(breadcrumbs)-1]['active']=True
+
+    results=searchclusters(breadcrumbs,topic,source,category,query,True,None)
 
     self.render('templates/clusters.html',query=query,results=results)
 
@@ -294,7 +369,8 @@ application = tornado.web.Application([
               (r"/topics",TopicsHandler),
               (r"/sources",SourcesHandler),
               (r"/categories",CategoriesHandler),
-              (r"/clusters/(.*)",ClustersHandler),
+              (r"/clusters(.*)",ClustersHandler),
+              (r"/carrot(.*)",CarrotHandler),
               (r"/mlt",MoreLikeThisHandler),
               (r"/(.*)", SearchHandler)],
               
