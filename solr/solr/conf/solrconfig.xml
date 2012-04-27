@@ -920,6 +920,45 @@
       </lst>
 </requestHandler>
 
+<requestHandler name="/entitycount" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+    </lst>
+    <lst name="invariants">
+       <int name="rows">0</int>
+       <str name="fl">id</str>
+       <bool name="facet">true</bool>
+       <int name="facet.limit">1000000</int>
+       <int name="facet.mincount">3</int>
+       <str name="facet.field">entity</str>
+    </lst>
+</requestHandler>
+<requestHandler name="/ngramcount" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+    </lst>
+    <lst name="invariants">
+       <int name="rows">0</int>
+       <str name="fl">id</str>
+       <bool name="facet">true</bool>
+       <int name="facet.limit">1000000</int>
+       <int name="facet.mincount">3</int>
+       <str name="facet.field">ngram</str>
+    </lst>
+</requestHandler>
+<requestHandler name="/totalcount" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+    </lst>
+    <lst name="invariants">
+       <int name="rows">0</int>
+      <str name="fl">id</str>
+      </lst>
+</requestHandler>
+
 <requestHandler name="/fetchsimilardocs" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="q">*:*</str>

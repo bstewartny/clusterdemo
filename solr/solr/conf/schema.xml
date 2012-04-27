@@ -529,6 +529,7 @@
    <field name="clusterid" type="string" indexed="true" stored="true"/>
    <field name="author" type="string" indexed="true" stored="true"/>
    <field name="entity" type="string" indexed="true" stored="true" multiValued="true"/>
+   <field name="ngram" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="category" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="categorykey" type="string" indexed="true" stored="true" multiValued="true"/>
    <!--

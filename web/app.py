@@ -111,11 +111,15 @@ def searchcarrot(breadcrumbs,topic,source,category,query,clustered,clusterid):
   for result in results.results:
     doc_map[result['id']]=result
 
+  max_docs_per_cluster=8
+  
   for carrot_cluster in results.clusters:
     docids=carrot_cluster['docs']
     docs=[]
     for docid in docids:
       docs.append(doc_map[docid])  
+      if len(docs)>=max_docs_per_cluster:
+        break
     label=" ".join(carrot_cluster['labels'])
     clustered_results.append({'label':label,'docs':docs})
 

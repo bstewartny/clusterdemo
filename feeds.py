@@ -13,14 +13,57 @@ import subprocess
 import nltk
 import pytz
 from threading import Thread
-
+from nltk.stem.porter import PorterStemmer
 
 http=urllib3.PoolManager()
 
 INDEX_URL='http://localhost:8983/solr'
 
-
 existing_doc_ids={}
+
+stemmer=PorterStemmer()
+
+stopwords={}
+
+client=solr.Solr(INDEX_URL)
+
+def update_doc_entities():
+  results=solr.SearchHandler(client,'/unclustered')()
+  for result in results.results:
+    result['entity']=get_entities(result['title'])
+    result['ngram']=get_ngrams(result['title'],3,5)
+    client.add(result,commit=False)
+  client.commit()
+
+for word in nltk.corpus.stopwords.words('english'):
+  stopwords[word]=1
+
+def get_ngrams(text,min,max):
+  global stemmer
+  global stopwords
+
+  # break into words
+  words=nltk.word_tokenize(text.strip().lower())
+  
+  # strip out stop words
+  words=[word for word in words if not stopwords.has_key(word)]
+
+  # strip out single-char words (including lots of punctuation)
+  words=[word for word in words if len(word)>1]
+
+  #TODO: remove punctuation
+
+  # stem remaining words
+  words=[stemmer.stem_word(word) for word in words]
+
+  ngrams=[]
+  
+  # get ngrams where min<=n<=max
+  for n in range(min,max+1):
+    ngrams.extend(' '.join(a) for a in nltk.ngrams(words,n))
+  
+  # remove duplicates
+  return list(set(ngrams))
 
 def get_all_doc_ids():
   ids={}
@@ -32,15 +75,11 @@ def get_all_doc_ids():
 
   return ids
 
-
 index=solr.Solr(INDEX_URL)
 
-invalid_entities=['tweet text',
-    'white house','continue reading','written by','united states',
-    'new york','new york city','new york times','washington post',
-    'raw story','fox news','associated press','wall street','wall street journal','weekly standard']
+invalid_entities=[] #['tweet text',
 
-invalid_entities.extend([feed['feed'].lower() for feed in feeddefs.feeds])
+#invalid_entities.extend([feed['feed'].lower() for feed in feeddefs.feeds])
 
 def extract_entity_names(t):
   entity_names = []
@@ -71,44 +110,25 @@ def filter_entities(a):
   u=[]
   a=list(set(a))
   # remove any single-word entities (too ambiguous in most cases)
-  a=[s for s in a if len(s.split())>1]
-  # remove any entities more than 3 words
-  a=[s for s in a if len(s.split())<4]
-  a.sort(lambda x,y:cmp(len(y),len(x)))
-  a=[x for x in a if not has_substr(x,a)]
+  #a=[s for s in a if len(s.split())>1]
+  # remove any entities more than 2 words
+  a=[s for s in a if len(s.split())<3]
+  #a.sort(lambda x,y:cmp(len(y),len(x)))
+  #a=[x for x in a if not has_substr(x,a)]
   a=[s for s in a if not s.lower() in invalid_entities]
   return a
 
 def get_entities(text):
-  print 'sent_tokenize'
   sentences = nltk.sent_tokenize(text)
-  print 'word_tokenize'
   tokenized_sentences = [nltk.word_tokenize(sentence) for sentence in sentences]
-  print 'pos_tag'
   tagged_sentences = [nltk.pos_tag(sentence) for sentence in tokenized_sentences]
-  print 'batch_ne_chunk'
   chunked_sentences = nltk.batch_ne_chunk(tagged_sentences, binary=True)
   
-  print 'extract_entity_names'
   entity_names=[]
   for tree in chunked_sentences:
     entity_names.extend(extract_entity_names(tree))
 
-  print 'filter_entities'
   return filter_entities(entity_names)
-
-def get_text_lynx(data):
-  try:
-      return subprocess.Popen(['/usr/local/bin/lynx', 
-                    '-assume-charset=UTF-8', 
-                    '-display-charset=UTF-8', 
-                    '-dump', 
-                    '-stdin'], 
-                    stdin=subprocess.PIPE, 
-                    stdout=subprocess.PIPE).communicate(input=data.encode('utf-8'))[0].decode('utf-8')
-  except:
-        print 'error getting text from lynx'
-  return ''
 
 def get_page_text(url):
   txt=''
@@ -274,10 +294,14 @@ def analyze_feed_item(item):
     
   #text = item["title"] + " "+text
   #print 'get_entities'
-  #entities=get_entities(text)
-  #item['entity']=entities
-  #item['entitykey']=[create_slug(entity) for entity in entities]
-  #print 'got_entities'
+  #text=item['title']+' '+text
+
+  entities=get_entities(item['title']) #text)
+  item['entity']=entities
+  
+  ngrams=get_ngrams(item['title'])
+  item['ngram']=ngrams
+  
   return item
 
 def copy_attribute(source,dest,name):
