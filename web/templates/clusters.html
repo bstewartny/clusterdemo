@@ -155,15 +155,12 @@
                     <small>{{result['feed']}} ({{result['category']}})</small>
                     <!-- TODO: show the related items underneath -->
                     {% if result.has_key('similar') %}
-                    <p>
-                    {% for similar in result['similar'] %}
-                      <h4><a class="title" href="{{escape(similar['link'])}}">{{ similar['title'] }}</a></h4>
-                    {% end %}
-                    {% if result['clustered']=='true' and len(result['similar'])>4  %}
-                        <a href="/?clusterid={{escape(result['clusterid'])}}">show all related</a>
-                        {% end%}
-                        </p>
+                        <p>
+                        {% for similar in result['similar'] %}
+                          <h4><a class="title" href="{{escape(similar['link'])}}">{{ similar['title'] }}</a></h4>
                         {% end %}
+                        </p>
+                      {% end %}
                       <a href="/mlt?id={{escape(result['id'])}}">More like this</a>
                       </blockquote>
                   {% end %}

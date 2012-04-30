@@ -81,7 +81,20 @@ def searchclusters(breadcrumbs,topic,source,category,query,clustered,clusterid):
   else:
     cluster_query=orig_query
 
-  return search(breadcrumbs,topic,source,category,cluster_query,True,None)
+  results=search(breadcrumbs,topic,source,category,cluster_query,True,None)
+
+  # sort by cluster size - largest first
+
+  sorted_results=results['results']
+  
+  sorted_results=sorted(sorted_results,key=lambda r: len(r.get('similar',[])))
+
+  sorted_results.reverse()
+
+  results['results']=sorted_results
+
+  return results
+
 
 def searchcarrot(breadcrumbs,topic,source,category,query,clustered,clusterid):
   facets=get_entities('*:*')
@@ -158,6 +171,7 @@ def search(breadcrumbs,topic,source,category,query,clustered,clusterid):
   sources=[{'name':source,'key':feeds.create_slug(source)} for source in sources]
   categories=[{'name':source,'key':feeds.create_slug(source)} for source in categories]
 
+  entities=[{'name':key,'key':key} for key,value in results.facet_counts['facet_fields']['entity'].iteritems()]
 
   clustered_results=[]
   if clustered:
@@ -169,7 +183,7 @@ def search(breadcrumbs,topic,source,category,query,clustered,clusterid):
         root['similar']=doclist[1:]
     results=clustered_results
 
-  return {'results':results,'topics':topics,'sources':sources,'breadcrumbs':breadcrumbs,'categories':categories}
+  return {'results':results,'entities':entities  ,'topics':topics,'sources':sources,'breadcrumbs':breadcrumbs,'categories':categories}
 
 
 class CarrotHandler(tornado.web.RequestHandler):
@@ -264,7 +278,7 @@ class ClustersHandler(tornado.web.RequestHandler):
 
     results=searchclusters(breadcrumbs,topic,source,category,query,True,None)
 
-    self.render('templates/clusters.html',query=query,results=results)
+    self.render('templates/index.html',query=query,results=results)
 
 class SearchHandler(tornado.web.RequestHandler):
   
@@ -376,7 +390,7 @@ application = tornado.web.Application([
               (r"/clusters(.*)",ClustersHandler),
               (r"/carrot(.*)",CarrotHandler),
               (r"/mlt",MoreLikeThisHandler),
-              (r"/(.*)", SearchHandler)],
+              (r"/(.*)", ClustersHandler)],
               
               static_path=os.path.join(os.path.dirname(__file__),"static")
               )

@@ -846,7 +846,9 @@
       <str name="fq">clustered:true</str>
        <int name="rows">100</int>
         <int name="facet.limit">20</int>     
-        <str name="facet.field">category,feed,feedkey,entity,entitykey</str>
+        <str name="facet.field">category</str>
+        <str name="facet.field">feed</str>
+        <str name="facet.field">entity</str>
         <str name="fl">id,category,date,link,title,entity,feed,summary,clustered,clusterid</str>
 
 
@@ -867,12 +869,15 @@
        <!--<str name="fq">clustered:true</str>-->
        <int name="rows">10</int>
         <int name="facet.limit">10</int>     
-        <str name="facet.field">category,feed,entity,entitykey</str>
+        <bool name="facet">true</bool>     
+        <str name="facet.field">category</str>
+        <str name="facet.field">feed</str>
+        <str name="facet.field">entity</str>
         <str name="fl">id,category,date,link,title,entity,feed,summary,clustered,clusterid</str>
         <str name="group">true</str>
         <str name="group.main">false</str>
         <str name="group.field">clusterid</str>
-        <int name="group.limit">4</int>
+        <int name="group.limit">10</int>
       </lst>
     </requestHandler>
 
@@ -885,7 +890,8 @@
        <int name="rows">0</int>
        <bool name="facet">true</bool>
        <int name="facet.limit">10</int>     
-        <str name="facet.field">clusterid</str>
+       <str name="facet.field">clusterid</str>
+       <int name="facet.mincount">2</int>
       </lst>
     </requestHandler>
 
@@ -1017,7 +1023,9 @@
        <int name="rows">10</int>
        <bool name="facet">true</bool>
        <int name="facet.limit">20</int>     
-        <str name="facet.field">category,feed,feedkey,entity,entitykey</str>
+        <str name="facet.field">category</str>
+        <str name="facet.field">feed</str>
+        <str name="facet.field">entity</str>
         <str name="fl">id,date,link,category,title,entity,feed,summary,clustered,clusterid</str>
       </lst>
 

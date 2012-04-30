@@ -9,22 +9,26 @@ SEARCH_URL='http://localhost:8983/solr'
 index=solr.Solr(INDEX_URL)
 search=solr.Solr(SEARCH_URL)
 
+# similarity threshold which is the minimum percentage of similarity in order to cluster documents together
 threshold=0.20
 
+# cache of entity document frequencies, used to calculate IDF used in feature weights
 entity_df={}
 
+# cache of ngram document frequencies, used to calculate IDF used in feature weights
 ngram_df={}
 
+# the total number of documents in the index, used to calculate IDF used in feature weights
 total_count=100000
+
+def get_idf(df):
+  global total_count
+  return math.log(1 + (total_count / df))
 
 def get_entity_idf(entity):
   global entity_df
   df=entity_df.get(entity,2)
   return get_idf(df)
-
-def get_idf(df):
-  global total_count
-  return math.log(1 + (total_count / df))
 
 def get_ngram_idf(ngram):
   global ngram_id
@@ -70,6 +74,7 @@ def update_doc(doc):
 def index_commit():
   index.commit()
 
+# setup stop words map using common english words and some other noise...
 stop_words_array="how,can,corp,inc,llp,llc,inc,v,v.,vs,vs.,them,he,she,it,where,with,now,legal,can,how,new,may,from,not,did,you,does,any,why,your,are,llp,corp,inc,a,an,and,are,as,at,be,but,by,for,if,in,into,is,it,no,not,of,on,or,such,that,the,their,then,there,these,they,this,to,was,will,with"
 
 stop_words={}
@@ -80,17 +85,20 @@ for word in stop_words_array.split(','):
 for word in nltk.corpus.stopwords.words('english'):
   stop_words[word]=word
 
+# find most similar docs in the index
 def fetch_similar_docs(entities,ngrams):
   clauses=[]
+  # build query using document entities
   for entity in entities:
     clauses.append('entity:"'+entity+'"')
 
+  # build query using document ngrams
   for ngram in ngrams:
     clauses.append('ngram:"'+ngram+'"')
 
+  # do query for documents containing any of the entities or ngrams
   query=' OR '.join(clauses)
 
-  print query
   return solr.SearchHandler(search,'/fetchsimilardocs')(query).results
 
 def compute_similarity(a,b):
@@ -98,13 +106,15 @@ def compute_similarity(a,b):
 
 def get_vector(a):
   vector={}
+  # build vector using entity features
   for entity in get_entities(a):
     vector[entity]=get_entity_idf(entity)
+  # build vector using ngram features
   for ngram in get_ngrams(a):
     vector[ngram]=get_ngram_idf(ngram)
-
   return vector
 
+# compute similarity between vectors using cosine similarity
 def compute_vector_similarity(a,b):
   
   if len(a)==0 or len(b)==0:
@@ -114,8 +124,11 @@ def compute_vector_similarity(a,b):
   
   bottoma=0.0
   
+  # compute dot product (intersection of the two documents feature vectors)
   for feature,weight in a.iteritems():
+    # add intersecting features (will just add 0 if no match for this feature)
     top=top + weight * b.get(feature,0.0)
+    # compute magnitude of vector a
     bottoma=bottoma+(weight*weight)
 
   if top==0.0:
@@ -124,13 +137,16 @@ def compute_vector_similarity(a,b):
   bottomb=0.0
 
   for feature,weight in b.iteritems():
+    # compute magnitude of vector b
     bottomb=bottomb+(weight*weight)
   
   if bottomb==0.0:
     return 0.0
 
+  # bottom part is the cross-product (magnitude of the two vectors)
   bottom=math.sqrt(bottoma) * math.sqrt(bottomb)
   
+  # return cosine measure as a percentage of similarity
   return top / bottom
 
 def get_values(doc,name):
@@ -172,10 +188,12 @@ def get_cluster_id(doc,modified_docs):
       return similar_doc['clusterid']
   return doc['clusterid']
 
-
 if __name__=="__main__":
+  # get total count of documents from index
   total_count=get_total_count()
+  # get ngram document frequencies from index
   ngram_df=get_ngram_counts()
+  # get entity document frequencies from index
   entity_df=get_entity_counts()
   results=execute_search_handler('/unclustered')
   cluster_docs(results.results)
