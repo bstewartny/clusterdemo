@@ -164,7 +164,20 @@
                     {% if result.has_key('summary') %}
                        <p>{{result['summary'][:300]}}...</p>
                     {% end %}
-                    <small>{{result['feed']}} ({{result['category']}})</small>
+                    <small>Feed: {{result['feed']}}</small>
+                    {% if result.has_key('plaintiff') %}
+                    <small>Plaintiff: <a href="?q={{escape(result['plaintiff'])}}">{{result['plaintiff']}}</a></small>
+                        {% end %}
+                    {% if result.has_key('defendant') %}
+                    <small>Defendant: <a href="?q={{escape(result['defendant'])}}">{{result['defendant']}}</a></small>
+                        {% end %}
+                        {% if result.has_key('entity') %}
+                        <small>Entities: 
+                      {% for entity in result['entity'] %}
+                      <a href="?q={{escape(entity)}}">{{entity}}</a>&nbsp;
+                        {% end %}
+                      </small>
+                    {% end %}
                     <!-- TODO: show the related items underneath -->
                     {% if result.has_key('similar') %}
                       <p>

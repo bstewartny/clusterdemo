@@ -27,11 +27,61 @@ stopwords={}
 
 client=solr.Solr(INDEX_URL)
 
+def parse_case_title(title):
+  title=title.strip()
+  # remove common prefix/suffix
+  # asfsfds [ORDER]
+  if title[-7:]=='[ORDER]':
+    title=title[:-7]
+    title=title.strip()
+
+  # asfafdf (10-875)
+  if title[-1:]==')':
+    i=title.find('(')
+    if i>0:
+      title=title[:i]
+      title=title.strip()
+
+  # Case: adsfasdfdasf
+  if title[:5]=='Case:':
+    title=title[5:]
+    title=title.strip()
+
+  # adsfasdf 10-55643
+  # 11-60500 asdfasdfasdf
+  # 11-5017 | asdfasfdsfd
+
+  # plaintiff v defendant
+  # plaintiff v. defendant
+  parts=title.split(' V. ')
+  if len(parts)!=2:
+    parts=title.split(' v. ')
+  if len(parts)!=2:
+    parts=title.split(' V ')
+  if len(parts)!=2:
+    parts=title.split(' v ')
+    
+  plaintiff=None
+  defendent=None
+  if len(parts)==2:
+    plaintiff=parts[0].strip()
+    defendent=parts[1].strip()
+  
+  if plaintiff is None or defendent is None:
+    return None
+  else:
+    return {'plaintiff':plaintiff,'defendant':defendent}
+
 def update_doc_entities():
   results=solr.SearchHandler(client,'/unclustered')()
   for result in results.results:
     result['entity']=get_entities(result['title'])
     result['ngram']=get_ngrams(result['title'],3,5)
+    d=parse_case_title(result['title'])
+    if d is not None:
+      result['defendant']=d['defendant']
+      result['plaintiff']=d['plaintiff']
+      
     client.add(result,commit=False)
   client.commit()
 
@@ -119,6 +169,12 @@ def filter_entities(a):
   return a
 
 def get_entities(text):
+  
+  case=parse_case_title(text)
+  if case is not None:
+    return [case['defendant'],case['plaintiff']]
+  
+  
   sentences = nltk.sent_tokenize(text)
   tokenized_sentences = [nltk.word_tokenize(sentence) for sentence in sentences]
   tagged_sentences = [nltk.pos_tag(sentence) for sentence in tokenized_sentences]

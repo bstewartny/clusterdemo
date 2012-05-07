@@ -873,7 +873,7 @@
         <str name="facet.field">category</str>
         <str name="facet.field">feed</str>
         <str name="facet.field">entity</str>
-        <str name="fl">id,category,date,link,title,entity,feed,summary,clustered,clusterid</str>
+        <str name="fl">id,defendant,plaintiff,category,date,link,title,entity,feed,summary,clustered,clusterid</str>
         <str name="group">true</str>
         <str name="group.main">false</str>
         <str name="group.field">clusterid</str>

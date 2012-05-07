@@ -132,12 +132,38 @@
                     {% if match.has_key('summary') %}
                        <p>{{match['summary'][:300]}}...</p>
                     {% end %}
-                    <small>{{match['feed']}}</small>
+                    <small>Feed: {{match['feed']}}</small>
+                    {% if match.has_key('plaintiff') %}
+                    <small>Plaintiff: <a href="/?q={{escape(match['plaintiff'])}}">{{match['plaintiff']}}</a></small>
+                        {% end %}
+                    {% if match.has_key('defendant') %}
+                    <small>Defendant: <a href="/?q={{escape(match['defendant'])}}">{{match['defendant']}}</a></small>
+                        {% end %}
+                        {% if match.has_key('entity') %}
+                        <small>Entities: 
+                      {% for entity in match['entity'] %}
+                      <a href="/?q={{escape(entity)}}">{{entity}}</a>&nbsp;
+                        {% end %}
+                      </small>
+                    {% end %}
                   </blockquote>
                 {% for result in results['results'] %}
                   <h4><a class="title" href="{{escape(result['link'])}}">{{ result['title'] }}</a></h4>
                   <blockquote>
-                    <small>{{result['feed']}}</small>
+                    <small>Feed: {{result['feed']}}</small>
+                    {% if result.has_key('plaintiff') %}
+                    <small>Plaintiff: <a href="/?q={{escape(result['plaintiff'])}}">{{result['plaintiff']}}</a></small>
+                        {% end %}
+                    {% if match.has_key('defendant') %}
+                    <small>Defendant: <a href="/?q={{escape(result['defendant'])}}">{{result['defendant']}}</a></small>
+                        {% end %}
+                        {% if result.has_key('entity') %}
+                        <small>Entities: 
+                      {% for entity in result['entity'] %}
+                      <a href="/?q={{escape(entity)}}">{{entity}}</a>&nbsp;
+                        {% end %}
+                      </small>
+                      {% end %}
                                       </blockquote>        
                 {% end %}
                 </div>
