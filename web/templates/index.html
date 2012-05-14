@@ -93,6 +93,7 @@
           <div class="nav-collapse">
             <ul class="nav">
               <li class="active"><a href="/">Home</a></li>
+              <li><a href="/mahout">Mahout Clusters</a></li>
               <li><a href="/carrot">Carrot Clusters</a></li>
             </ul>
             <form method="get" action="" class="navbar-search pull-right">
@@ -134,12 +135,12 @@
                 {% end %}
               </ul>-->
             {% if results.has_key('entities') and len(results['entities'])>0 %}
-            <ul class="nav nav-list">
+<!--            <ul class="nav nav-list">
               <li class="nav-header">Top Entities</li>
                 {% for entity in results['entities']%}   
                   <li><a class="title" href="?q={{escape(entity['key'])}}">{{entity['name']}}</a></li>
                 {% end %}
-              </ul>
+              </ul>-->
               {% end %}
             <ul class="nav nav-list">
               <li class="nav-header">Top Categories</li>

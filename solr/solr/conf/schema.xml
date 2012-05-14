@@ -526,10 +526,12 @@
    <field name="entitykey" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="feedlink" type="string" indexed="true" stored="true"/>
    <field name="clustered" type="string" indexed="true" stored="true"/>
+   <field name="mahoutclusterid" type="string" indexed="true" stored="true"/>
    <field name="clusterid" type="string" indexed="true" stored="true"/>
+   <field name="kmeans" type="string" indexed="true" stored="true"/>
    <field name="author" type="string" indexed="true" stored="true"/>
    <field name="entity" type="string" indexed="true" stored="true" multiValued="true"/>
-   <field name="ngram" type="string" indexed="true" stored="true" multiValued="true"/>
+   <field name="ngram" type="string" indexed="true" stored="true" multiValued="true" termVectors="true"/>
    <field name="category" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="categorykey" type="string" indexed="true" stored="true" multiValued="true"/>
    <!--

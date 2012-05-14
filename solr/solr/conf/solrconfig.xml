@@ -849,7 +849,7 @@
         <str name="facet.field">category</str>
         <str name="facet.field">feed</str>
         <str name="facet.field">entity</str>
-        <str name="fl">id,category,date,link,title,entity,feed,summary,clustered,clusterid</str>
+        <str name="fl">id,category,date,link,title,entity,feed,summary,clustered,mahoutclusterid,clusterid</str>
 
 
       </lst>
@@ -858,6 +858,28 @@
     </arr>
     </requestHandler>
     
+    <requestHandler name="/searchmahoutclustered" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+      <str name="qf">title^5.0 summary^2.0 body^1.0</str>
+    </lst>
+    <lst name="invariants">
+       <str name="echoParams">explicit</str>
+       <!--<str name="fq">clustered:true</str>-->
+       <int name="rows">10</int>
+        <int name="facet.limit">10</int>     
+        <bool name="facet">true</bool>     
+        <str name="facet.field">category</str>
+        <str name="facet.field">feed</str>
+        <str name="facet.field">entity</str>
+        <str name="fl">id,defendant,plaintiff,category,date,link,title,entity,feed,summary,clustered,mahoutclusterid,clusterid</str>
+        <str name="group">true</str>
+        <str name="group.main">false</str>
+        <str name="group.field">mahoutclusterid</str>
+        <int name="group.limit">10</int>
+      </lst>
+    </requestHandler>
     <requestHandler name="/searchclustered" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="q">*:*</str>
@@ -873,7 +895,7 @@
         <str name="facet.field">category</str>
         <str name="facet.field">feed</str>
         <str name="facet.field">entity</str>
-        <str name="fl">id,defendant,plaintiff,category,date,link,title,entity,feed,summary,clustered,clusterid</str>
+        <str name="fl">id,defendant,plaintiff,category,date,link,title,entity,feed,summary,clustered,mahoutclusterid,clusterid</str>
         <str name="group">true</str>
         <str name="group.main">false</str>
         <str name="group.field">clusterid</str>
@@ -881,6 +903,19 @@
       </lst>
     </requestHandler>
 
+    <requestHandler name="/searchmahoutclusters" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="q">*:*</str>
+      <str name="defType">edismax</str>
+      <str name="qf">title^5.0 summary^2.0 body^1.0</str>
+       <str name="echoParams">explicit</str>
+       <int name="rows">0</int>
+       <bool name="facet">true</bool>
+       <int name="facet.limit">10</int>     
+       <str name="facet.field">mahoutclusterid</str>
+       <int name="facet.mincount">2</int>
+      </lst>
+    </requestHandler>
     <requestHandler name="/searchclusters" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="q">*:*</str>
@@ -974,7 +1009,7 @@
     <lst name="invariants">
        <str name="echoParams">explicit</str>
        <int name="rows">10</int>
-      <str name="fl">id,clusterid,title,feed</str>
+      <str name="fl">id,mahoutclusterid,clusterid,title,feed,entity,ngram</str>
       </lst>
     </requestHandler>
 
@@ -987,7 +1022,7 @@
        <str name="echoParams">explicit</str>
        <int name="rows">1000</int>
        <str name="sort">date desc</str>
-      <str name="fl">id,title,date,feed,clusterid</str>
+      <str name="fl">id,title,date,feed,mahoutclusterid,clusterid</str>
       </lst>
 </requestHandler>
 
@@ -1000,7 +1035,7 @@
        <str name="echoParams">explicit</str>
        <int name="rows">10000</int>
        <str name="sort">date desc</str>
-      <str name="fl">id,title,date,feed,clusterid</str>
+      <str name="fl">id,title,date,feed,mahoutclusterid,clusterid</str>
       </lst>
 </requestHandler>
 
@@ -1026,7 +1061,7 @@
         <str name="facet.field">category</str>
         <str name="facet.field">feed</str>
         <str name="facet.field">entity</str>
-        <str name="fl">id,date,link,category,title,entity,feed,summary,clustered,clusterid</str>
+        <str name="fl">id,date,link,category,title,entity,feed,summary,clustered,mahoutclusterid,clusterid</str>
       </lst>
 
 

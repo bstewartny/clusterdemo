@@ -75,8 +75,9 @@ def parse_case_title(title):
 def update_doc_entities():
   results=solr.SearchHandler(client,'/unclustered')()
   for result in results.results:
+    result['clusterid']=result['id']
     result['entity']=get_entities(result['title'])
-    result['ngram']=get_ngrams(result['title'],3,5)
+    result['ngram']=get_ngrams(result['title'],2,4)
     d=parse_case_title(result['title'])
     if d is not None:
       result['defendant']=d['defendant']

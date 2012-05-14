@@ -2,6 +2,7 @@ import solr
 import math
 import re
 import nltk
+import os
 
 INDEX_URL='http://localhost:8983/solr'
 SEARCH_URL='http://localhost:8983/solr'
@@ -10,7 +11,7 @@ index=solr.Solr(INDEX_URL)
 search=solr.Solr(SEARCH_URL)
 
 # similarity threshold which is the minimum percentage of similarity in order to cluster documents together
-threshold=0.20
+threshold=0.175 #0.20 #175
 
 # cache of entity document frequencies, used to calculate IDF used in feature weights
 entity_df={}
@@ -20,6 +21,58 @@ ngram_df={}
 
 # the total number of documents in the index, used to calculate IDF used in feature weights
 total_count=100000
+
+def mahout_command(name,params):
+  os.system('export JAVA_HOME=/usr; /usr/local/mahout/bin/mahout '+name+' '+params)
+
+def mahout_lucene_vectors():
+  mahout_command('lucene.vector','-d /Users/bstewart/clusterdemo/solr/data/index/ -o lucene.vectors -t dict -x 30 -md 2 -f ngram --idField id  -n 2 -err 0.05')
+
+def mahout_kmeans(k,maxIter):
+  mahout_command('kmeans','-c kmeans-centroids -k '+str(k)+' -cl -ow -i lucene.vectors -o kmeans-output --maxIter '+str(maxIter))
+
+def mahout_clusterdump():
+  mahout_command('clusterdump','-p kmeans-output/clusteredPoints/ -d dict -of CSV -s kmeans-output/clusters-*-final/ -n 0 > clusters.csv')
+
+def mahout_readclusters():
+  clusters={}
+  lines=open('clusters.csv','r').readlines()
+  print 'read '+str(len(lines)) +' clusters from file'
+  for line in lines:
+    parts=line.split(',')
+    clusterid='kmeans'+parts[0]
+    if len(parts)>1:
+      for i in range(1,len(parts)):
+        clusters[parts[i]]=clusterid
+
+  return clusters
+
+def mahout_clusters(docs):
+  # generate vectors from solr
+  print 'get lucene vectors'
+  mahout_lucene_vectors()
+  # do kmeans clustering
+  print 'do mahout kmeans'
+  mahout_kmeans(1000,100)
+  # dump cluster to csv
+  print 'dump clusters'
+  mahout_clusterdump()
+  # read clusters and assign to documents
+  print 'read clusters'
+  clusters=mahout_readclusters()
+  print 'update docs'
+  for doc in docs:
+    try:
+      if clusters.has_key(doc['id']):
+        doc['clusterid']=clusters[doc['id']]
+        update_doc(doc)
+    except:
+      print 'failed to find cluster for id: '+doc['id']
+
+  print 'index commit'
+  index_commit()
+  print 'finished'
+  
 
 def get_idf(df):
   global total_count
@@ -50,6 +103,34 @@ def get_ngram_counts():
 
 def get_entity_counts():
   return get_facet_counts(execute_search_handler('/entitycount'),'entity')
+
+
+def get_distance(a,b):
+  
+  tmp=0.0
+  for key,weight in a.iteritems():
+    diff=weight - b.get(key,0.0)
+    tmp=tmp+(diff*diff)
+  return math.sqrt(tmp)
+  
+  #return 1.0 - compute_vector_similarity(a,b)
+
+def cluster_docs_kmeans(docs):
+  print 'kmeans clustering '+str(len(docs))+' unclustered docs...'
+  vectors=[get_vector(doc) for doc in docs]
+  clusters=kmeans(vectors,get_distance,max(100,len(docs) / 100))
+  
+  clusterid=0
+  for cluster in clusters:
+    for docid in cluster:
+      doc=docs[docid]
+      doc['clusterid']='cluster'+str(clusterid)
+    clusterid=clusterid+1
+  
+  print 'updating '+str(len(docs))+' docs...'
+  for doc in docs:
+    update_doc(doc)
+  index_commit()
 
 def cluster_docs(docs):
   print 'clustering '+str(len(docs))+' unclustered docs...'
@@ -86,8 +167,15 @@ for word in nltk.corpus.stopwords.words('english'):
   stop_words[word]=word
 
 # find most similar docs in the index
-def fetch_similar_docs(entities,ngrams):
+def fetch_similar_docs(entities,ngrams,defendant,plaintiff):
   clauses=[]
+
+  if defendant is not None:
+    clauses.append('defendant:"'+defendant+'"^10.0')
+
+  if plaintiff is not None:
+    clauses.append('plaintiff:"'+plaintiff+'"^10.0')
+
   # build query using document entities
   for entity in entities:
     clauses.append('entity:"'+entity+'"')
@@ -102,6 +190,13 @@ def fetch_similar_docs(entities,ngrams):
   return solr.SearchHandler(search,'/fetchsimilardocs')(query).results
 
 def compute_similarity(a,b):
+  if a['title']==b['title']:
+    return 100.0
+  if a.get('defendant',True)==b.get('defendant',False):
+    return 100.0
+  if a.get('plaintiff',True)==b.get('plaintiff',False):
+    return 100.0
+
   return compute_vector_similarity(get_vector(a),get_vector(b))
 
 def get_vector(a):
@@ -168,8 +263,11 @@ def get_cluster_id(doc,modified_docs):
   if len(entities)==0 and len(ngrams)==0:
     return doc['clusterid']
 
+  defendant=doc.get('defandant',None)
+  plaintiff=doc.get('plaintiff',None)
+
   # find other docs with any of these good words
-  similar_docs=fetch_similar_docs(entities,ngrams)
+  similar_docs=fetch_similar_docs(entities,ngrams,defendant,plaintiff)
 
   # see if any of them have at least a minimum number of good words
   for similar_doc in similar_docs:
@@ -177,23 +275,100 @@ def get_cluster_id(doc,modified_docs):
       continue
     similarity=compute_similarity(doc,similar_doc)
     if similarity>=threshold:
-      try:
-        print "============================"
-        print "similarity: "+str(similarity)
-        print doc['title']
-        print similar_doc['title']
-        print "============================"
-      except:
-        print 'tried to print title but not ascii i guess...'
+      if similarity < 100.0:
+        try:
+          print "============================"
+          print "similarity: "+str(similarity)
+          print doc['title']
+          print similar_doc['title']
+          print "============================"
+        except:
+          print 'tried to print title but not ascii i guess...'
       return similar_doc['clusterid']
   return doc['clusterid']
+
+
+import random
+
+
+def kmeans(vectors,distance,k):
+  # collect the dimensions (features) from docs
+  dims={}
+  print 'gather all dimensions from vectors'
+  for v in vectors:
+    for key,weight in v.iteritems():
+      rang=dims.get(key,[weight,weight])
+      rang[0]=min(rang[0],weight)
+      rang[1]=max(rang[1],weight)
+      dims[key]=rang
+
+  min_max=3.0
+  orig_size=len(dims)
+  print 'eliminate smaller dimensions'
+  dims=dict([(key,rang) for key,rang in dims.iteritems() if rang[1]>min_max])
+
+  print 'new size='+str(len(dims)) +', orig size='+str(orig_size)
+  
+  print 'gathered '+str(len(dims))+' dimensions'
+
+  print 'create '+str(k) +' random centroids'
+  # create random centroids
+
+  print 'get ranges'
+  ranges=[(key,rang) for key,rang in dims.iteritems()]
+
+  print 'get centroids'
+  clusters=[dict([(key,random.random() *(rang[1]-rang[0]) + rang[0]) for (key,rang) in ranges]) for j in range(k)]
+
+  lastmatches=None
+  for t in range(100):
+    print 'Iteration: %d' % t
+    bestmatches=[[] for i in range(k)]
+
+    # find centroid closest to each doc
+    for j in range(len(vectors)):
+      vector=vectors[j]
+      bestmatch=0
+      bestdistance=distance(vector,clusters[bestmatch])
+      for i in range(k):
+        d=distance(vector,clusters[i])
+        if d<bestdistance:
+          bestmatch=i
+          bestdistance=d
+      # add document to list of items in cluster
+      bestmatches[bestmatch].append(j)
+    
+    # if results are same as last time, we are done
+    if bestmatches==lastmatches:
+      print 'Reached convergence...'
+      break
+    lastmatches=bestmatches
+
+    print 'Compute average centroids...'
+    # move centroid to average of their members
+    for i in range(k):
+      avg={}
+      # get documents in cluster
+      clustermatches=bestmatches[i]
+      for j in clustermatches:
+        vector=vectors[j]
+        for key,weight in vector.iteritems():
+          avg[key]=avg.get(key,0.0)+weight
+      avg=dict([(key,weight/len(clustermatches)) for key,weight in avg.iteritems()])
+      clusters[i]=avg
+  
+  return lastmatches
 
 if __name__=="__main__":
   # get total count of documents from index
   total_count=get_total_count()
+  print 'total_count='+str(total_count)
   # get ngram document frequencies from index
   ngram_df=get_ngram_counts()
   # get entity document frequencies from index
   entity_df=get_entity_counts()
   results=execute_search_handler('/unclustered')
+  #mahout_clusters(results.results)
+
+  #cluster_docs_kmeans(results.results)
   cluster_docs(results.results)

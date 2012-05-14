@@ -3,7 +3,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Cluster Demo - More Like This</title>
+    <title>Cluster Demo - Mahout Clusters</title>
+
 
     <meta name="description" content="">
     <meta name="author" content="">
@@ -86,8 +87,8 @@
           <a class="brand" href="#">Clustering Demo</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li class="active"><a href="/">Home</a></li>
-              <li><a href="/mahout">Mahout Clusters</a></li>
+              <li><a href="/">Home</a></li>
+              <li class="active"><a href="/mahout">Mahout Clusters</a></li>
               <li><a href="/carrot">Carrot Clusters</a></li>
             </ul>
             <form method="get" action="" class="navbar-search pull-right">
@@ -102,72 +103,60 @@
         <li>
         <a href="/">Home</a> <span class="divider">/</span>
         </li>
-        <li>
-         More Like This
+        {% for breadcrumb in results['breadcrumbs'] %}
+        {% if breadcrumb['active'] %}
+            <li class="active">
+            {% else %}
+            <li>
+            {%end%}
+        <a href="/mahout{{breadcrumb['link']}}">{{breadcrumb['name']}}</a>
+        {% if not breadcrumb['active'] %}
+            <span class="divider">/</span>
+        {% end %}
         </li>
+
+
+        {% end %}
       </ul>
 
+      
       <div class="row-fluid">
         <div class="span3">
           <div class="well sidebar-nav">
+            <!--<ul class="nav nav-list">
+              <li class="nav-header">Popular Topics</li>
+                {% for topic in results['topics']%}   
+                  <li><a class="title" href="/mahout/topic/{{topic['key']}}">{{topic['name']}}</a></li>
+                {% end %}
+              </ul>-->
             <ul class="nav nav-list">
               <li class="nav-header">Top Categories</li>
                 {% for topic in results['categories']%}   
-                  <li><a class="title" href="/category/{{topic['key']}}">{{topic['name']}}</a></li>
+                  <li><a class="title" href="/mahout/category/{{topic['key']}}">{{topic['name']}}</a></li>
                 {% end %}
             </ul>
             <ul class="nav nav-list">
               <li class="nav-header">Top Sources</li>
                 {% for source in results['sources']%}   
-                  <li><a class="title" href="/source/{{source['key']}}">{{source['name']}}</a></li>
+                  <li><a class="title" href="/mahout/source/{{source['key']}}">{{source['name']}}</a></li>
                 {% end %}
             </ul>
           </div> 
         </div>
         <div class="span9">
           <div class="row-fluid">
-            <div class="span12 hero-unit">
-                  <h2>More Like This:</h2>
-                  <h3><a class="title" href="{{escape(match['link'])}}">{{ match['title'] }}</a></h3>
+            <div class="span12">
+                  {% for cluster in results['clusters'] %}
+                  <h3>{{ cluster['label'] }}</h3>
                   <blockquote>
-                    {% if match.has_key('summary') %}
-                       <p>{{match['summary'][:300]}}...</p>
+                    <p>
+                    {% for doc in cluster['docs'] %}
+                      <h4><a class="title" href="{{escape(doc['link'])}}">{{ doc['title'] }}</a></h4>
                     {% end %}
-                    <small>Feed: {{match['feed']}}</small>
-                    {% if match.has_key('plaintiff') %}
-                    <small>Plaintiff: <a href="/?q={{escape(match['plaintiff'])}}">{{match['plaintiff']}}</a></small>
-                        {% end %}
-                    {% if match.has_key('defendant') %}
-                    <small>Defendant: <a href="/?q={{escape(match['defendant'])}}">{{match['defendant']}}</a></small>
-                        {% end %}
-                        {% if match.has_key('entity') %}
-                        <small>Entities: 
-                      {% for entity in match['entity'] %}
-                      <a href="/?q={{escape(entity)}}">{{entity}}</a>&nbsp;
-                        {% end %}
-                      </small>
-                    {% end %}
-                  </blockquote>
-                {% for result in results['results'] %}
-                  <h4><a class="title" href="{{escape(result['link'])}}">{{ result['title'] }}</a></h4>
-                  <blockquote>
-                    <small>Feed: {{result['feed']}}</small>
-                    {% if result.has_key('plaintiff') %}
-                    <small>Plaintiff: <a href="/?q={{escape(result['plaintiff'])}}">{{result['plaintiff']}}</a></small>
-                        {% end %}
-                    {% if match.has_key('defendant') %}
-                    <small>Defendant: <a href="/?q={{escape(result['defendant'])}}">{{result['defendant']}}</a></small>
-                        {% end %}
-                        {% if result.has_key('entity') %}
-                        <small>Entities: 
-                      {% for entity in result['entity'] %}
-                      <a href="/?q={{escape(entity)}}">{{entity}}</a>&nbsp;
-                        {% end %}
-                      </small>
-                      {% end %}
-                                      </blockquote>        
-                {% end %}
-                </div>
+                        </p>
+                      </blockquote>
+                  {% end %}
+            </div>
           </div>
         </div>
       </div>
