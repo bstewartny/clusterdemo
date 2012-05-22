@@ -26,13 +26,22 @@ def mahout_command(name,params):
   os.system('export JAVA_HOME=/usr; /usr/local/mahout/bin/mahout '+name+' '+params)
 
 def mahout_lucene_vectors():
-  mahout_command('lucene.vector','-d /Users/bstewart/clusterdemo/solr/data/index/ -o lucene.vectors -t dict -x 30 -md 2 -f ngram --idField id  -n 2 -err 0.05')
+  mahout_command('lucene.vector','-d /Users/bstewart/clusterdemo/solr/data/index/ -o lucene.vectors -t dict -x 50 -w TFIDF -f ngram --idField id --norm 2 -err 0.05')
+
+def mahout_canopy(t1,t2):
+  mahout_command('canopy','-i lucene.vectors -o canopy-output -dm org.apache.mahout.common.distance.CosineDistanceMeasure -t1 '+str(t1)+' -t2 '+str(t2) + ' -ow -cl')
 
 def mahout_kmeans(k,maxIter):
-  mahout_command('kmeans','-c kmeans-centroids -k '+str(k)+' -cl -ow -i lucene.vectors -o kmeans-output --maxIter '+str(maxIter))
+  mahout_command('kmeans','-c kmeans-centroids -k '+str(k)+' -cd 0.1 -cl -ow -i lucene.vectors -o kmeans-output --maxIter '+str(maxIter))
 
-def mahout_clusterdump():
+def mahout_kmeans_post_canopy(maxIter):
+  mahout_command('kmeans','-c kmeans-centroids -cd 0.1 -cl -ow -i canopy-output/clusters-0/ -o kmeans-output --maxIter '+str(maxIter))
+
+def mahout_clusterdump_kmeans():
   mahout_command('clusterdump','-p kmeans-output/clusteredPoints/ -d dict -of CSV -s kmeans-output/clusters-*-final/ -n 0 > clusters.csv')
+
+def mahout_clusterdump_canopy():
+  mahout_command('clusterdump','-p canopy-output/clusteredPoints/ -d dict -of CSV -s canopy-output/clusters-0/ -n 0 > clusters.csv')
 
 def mahout_readclusters():
   clusters={}
@@ -40,39 +49,57 @@ def mahout_readclusters():
   print 'read '+str(len(lines)) +' clusters from file'
   for line in lines:
     parts=line.split(',')
-    clusterid='kmeans'+parts[0]
+    clusterid='mahout'+parts[0]
     if len(parts)>1:
       for i in range(1,len(parts)):
         clusters[parts[i]]=clusterid
 
   return clusters
 
-def mahout_clusters(docs):
-  # generate vectors from solr
-  print 'get lucene vectors'
-  mahout_lucene_vectors()
-  # do kmeans clustering
-  print 'do mahout kmeans'
-  mahout_kmeans(1000,100)
-  # dump cluster to csv
-  print 'dump clusters'
-  mahout_clusterdump()
-  # read clusters and assign to documents
-  print 'read clusters'
-  clusters=mahout_readclusters()
+def update_doc_clusterids(docs,clusters):
   print 'update docs'
   for doc in docs:
     try:
       if clusters.has_key(doc['id']):
-        doc['clusterid']=clusters[doc['id']]
-        update_doc(doc)
+        doc['mahoutclusterid']=clusters[doc['id']]
+      else:
+        doc['mahoutclusterid']=doc['id']
     except:
       print 'failed to find cluster for id: '+doc['id']
 
-  print 'index commit'
-  index_commit()
-  print 'finished'
-  
+def mahout_clusters_canopy_kmeans(docs):
+  print 'get lucene vectors'
+  mahout_lucene_vectors()
+  print 'do mahout canopy'
+  mahout_canopy(0.7,0.75)
+  mahout_kmeans_post_canopy(10)
+  print 'dump clusters'
+  mahout_clusterdump_kmeans()
+  print 'read clusters'
+  clusters=mahout_readclusters()
+  update_doc_clusterids(docs,clusters)
+
+def mahout_clusters_canopy(docs):
+  print 'get lucene vectors'
+  mahout_lucene_vectors()
+  print 'do mahout canopy'
+  mahout_canopy(0.7,0.8)
+  print 'dump clusters'
+  mahout_clusterdump_canopy()
+  print 'read clusters'
+  clusters=mahout_readclusters()
+  update_doc_clusterids(docs,clusters)
+
+def mahout_clusters_kmeans(docs):
+  print 'get lucene vectors'
+  mahout_lucene_vectors()
+  print 'do mahout kmeans'
+  mahout_kmeans(2000,10)
+  print 'dump clusters'
+  mahout_clusterdump_kmeans()
+  print 'read clusters'
+  clusters=mahout_readclusters()
+  update_doc_clusterids(docs,clusters)
 
 def get_idf(df):
   global total_count
@@ -144,10 +171,11 @@ def cluster_docs(docs):
       modified_docs[doc['id']]=doc
   
   # update all docs that now have cluster ID
-  print 'updating '+str(len(modified_docs))+' docs...'
-  for uid,doc in modified_docs.iteritems():
-    update_doc(doc)
-  index_commit()
+  #print 'updating '+str(len(modified_docs))+' docs...'
+  #for uid,doc in modified_docs.iteritems():
+  #for doc in docs:
+  #  update_doc(doc)
+  #index_commit()
 
 def update_doc(doc):
   index.add(doc,commit=False)
@@ -368,7 +396,11 @@ if __name__=="__main__":
   # get entity document frequencies from index
   entity_df=get_entity_counts()
   results=execute_search_handler('/unclustered')
-  #mahout_clusters(results.results)
+  #mahout_clusters_kmeans(results.results)
+  mahout_clusters_canopy_kmeans(results.results)
 
   #cluster_docs_kmeans(results.results)
   cluster_docs(results.results)
+  for result in results.results:
+    update_doc(result)
+  index_commit()

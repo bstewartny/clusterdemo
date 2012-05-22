@@ -86,7 +86,7 @@
           <a class="brand" href="#">Clustering Demo</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li class="active"><a href="/">Home</a></li>
+              <li><a href="/">Py Clusters</a></li>
               <li><a href="/mahout">Mahout Clusters</a></li>
               <li><a href="/carrot">Carrot Clusters</a></li>
             </ul>
@@ -100,10 +100,10 @@
     <div class="container-fluid">
       <ul class="breadcrumb">
         <li>
-        <a href="/">Home</a> <span class="divider">/</span>
+        More Like This<span class="divider">/</span>
         </li>
         <li>
-         More Like This
+        {{match['title']}}
         </li>
       </ul>
 
@@ -127,7 +127,6 @@
         <div class="span9">
           <div class="row-fluid">
             <div class="span12 hero-unit">
-                  <h2>More Like This:</h2>
                   <h3><a class="title" href="{{escape(match['link'])}}">{{ match['title'] }}</a></h3>
                   <blockquote>
                     {% if match.has_key('summary') %}

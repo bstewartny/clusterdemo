@@ -87,9 +87,9 @@
           <a class="brand" href="#">Clustering Demo</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li><a href="/">Home</a></li>
+              <li><a href="/?q={{escape(query)}}">Py Clusters</a></li>
               <li class="active"><a href="/mahout">Mahout Clusters</a></li>
-              <li><a href="/carrot">Carrot Clusters</a></li>
+              <li><a href="/carrot?q={{escape(query)}}">Carrot Clusters</a></li>
             </ul>
             <form method="get" action="" class="navbar-search pull-right">
               <input id="q" size="50" name="q" value="{{escape(query)}}" type="text" class="search-query" placeholder="Search">
@@ -101,7 +101,7 @@
     <div class="container-fluid">
       <ul class="breadcrumb">
         <li>
-        <a href="/">Home</a> <span class="divider">/</span>
+        <a href="/mahout">Mahout Clusters</a> <span class="divider">/</span>
         </li>
         {% for breadcrumb in results['breadcrumbs'] %}
         {% if breadcrumb['active'] %}
@@ -146,14 +146,35 @@
         <div class="span9">
           <div class="row-fluid">
             <div class="span12">
-                  {% for cluster in results['clusters'] %}
-                  <h3>{{ cluster['label'] }}</h3>
+              {% for result in results['results'] %}
+                  <h3><a class="title" href="{{escape(result['link'])}}">{{ result['title'] }}</a></h3>
                   <blockquote>
-                    <p>
-                    {% for doc in cluster['docs'] %}
-                      <h4><a class="title" href="{{escape(doc['link'])}}">{{ doc['title'] }}</a></h4>
+                    {% if result.has_key('summary') %}
+                       <p>{{result['summary'][:300]}}...</p>
                     {% end %}
-                        </p>
+                    <small>Feed: {{result['feed']}}</small>
+                    {% if result.has_key('plaintiff') %}
+                    <small>Plaintiff: <a href="?q={{escape(result['plaintiff'])}}">{{result['plaintiff']}}</a></small>
+                        {% end %}
+                    {% if result.has_key('defendant') %}
+                    <small>Defendant: <a href="?q={{escape(result['defendant'])}}">{{result['defendant']}}</a></small>
+                        {% end %}
+                        {% if result.has_key('entity') %}
+                        <small>Entities: 
+                      {% for entity in result['entity'] %}
+                      <a href="?q={{escape(entity)}}">{{entity}}</a>&nbsp;
+                        {% end %}
+                      </small>
+                    {% end %}
+                    <!-- TODO: show the related items underneath -->
+                    {% if result.has_key('similar') %}
+                      <p>
+                      {% for similar in result['similar'] %}
+                        <h4><a class="title" href="{{escape(similar['link'])}}">{{ similar['title'] }}</a></h4>
+                      {% end %}
+                      </p>
+                    {% end %}
+                      <a href="/mlt?id={{escape(result['id'])}}">More like this</a>
                       </blockquote>
                   {% end %}
             </div>

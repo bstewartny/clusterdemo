@@ -74,10 +74,16 @@ def parse_case_title(title):
 
 def update_doc_entities():
   results=solr.SearchHandler(client,'/unclustered')()
+  print 'Got '+str(len(results.results)) +' docs'
   for result in results.results:
     result['clusterid']=result['id']
-    result['entity']=get_entities(result['title'])
-    result['ngram']=get_ngrams(result['title'],2,4)
+    result['mahoutclusterid']=result['id']
+    result['entity']=None #get_entities(result['title'])
+    ngrams=get_ngrams(result['title'],2,4)
+    if ngrams is None or len(ngrams)<2:
+      #print 'failed to get ngrams for doc: '+result['title']
+      ngrams=[result['id']]
+    result['ngram']=ngrams
     d=parse_case_title(result['title'])
     if d is not None:
       result['defendant']=d['defendant']
@@ -93,6 +99,10 @@ def get_ngrams(text,min,max):
   global stemmer
   global stopwords
 
+  lower=text.strip().lower()
+
+  lower=lower.replace(" v "," versus ").replace(" v. "," versus ").replace(" vs "," versus ").replace(" vs. "," versus ")
+  
   # break into words
   words=nltk.word_tokenize(text.strip().lower())
   
@@ -107,12 +117,29 @@ def get_ngrams(text,min,max):
   # stem remaining words
   words=[stemmer.stem_word(word) for word in words]
 
+  # remove numbers?
+  words=[word for word in words if not word.isdigit()]
+
+  # remove non alpha-numeric words
+  words=[word for word in words if word.isalnum()]
+  
+  # if all words are not uppercase, and some words are all uppercase then they can be single terms if >= 3 chars long...
+
+
   ngrams=[]
   
   # get ngrams where min<=n<=max
   for n in range(min,max+1):
     ngrams.extend(' '.join(a) for a in nltk.ngrams(words,n))
   
+  if min>1:
+    if not text.upper()==text:
+      shorts=[word.lower() for word in nltk.word_tokenize(text.strip()) if word.isalpha() and len(word)==4 and word.upper()==word]
+      if len(shorts)==1:
+        print 'Adding short upper case terms: '+str(shorts)
+        ngrams.extend(shorts)
+
+
   # remove duplicates
   return list(set(ngrams))
 
@@ -353,10 +380,12 @@ def analyze_feed_item(item):
   #print 'get_entities'
   #text=item['title']+' '+text
 
-  entities=get_entities(item['title']) #text)
-  item['entity']=entities
+  #entities=get_entities(item['title']) #text)
+  #item['entity']=entities
   
-  ngrams=get_ngrams(item['title'])
+  ngrams=get_ngrams(item['title'],2,4)
+  if ngrams is None or len(ngrams)<2:
+    ngrams=[result['id']]
   item['ngram']=ngrams
   
   return item
@@ -379,7 +408,9 @@ def create_solr_doc(item):
   d=get_item_date(item)
   doc['feedkey']=create_slug(doc['feed'])
   doc['clustered']='false'
-  doc['clusterid']=normalize_title(doc['title'])
+  clusterid=normalize_title(doc['title'])
+  doc['clusterid']=clusterid
+  doc['mahoutclusterid']=clusterid
   if d is not None:
     doc["date"]=d
   return doc

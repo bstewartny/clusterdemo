@@ -46,10 +46,8 @@ def get_categories(query):
   return [key for key,value in feeds_results.facet_counts['facet_fields']['category'].iteritems()]
 
 
-def searchclusters(breadcrumbs,topic,source,category,query,clustered,handler,clusterfieldname):
+def searchclusters(breadcrumbs,topic,source,category,query,clustered,handler,clusterfieldname,searchhandler):
 
-  #handler=get_handler('/searchclusters')
- 
   # get the top clusters for this query
   orig_query=query
 
@@ -69,8 +67,9 @@ def searchclusters(breadcrumbs,topic,source,category,query,clustered,handler,clu
   # create a new query using those clusters only...
   clusters=[]
 
-  for cluster,count in results.facet_counts['facet_fields'][clusterfieldname].iteritems():
-    clusters.append(clusterfieldname+':"'+cluster+'"')
+  if results.facet_counts.has_key('facet_fields') and results.facet_counts['facet_fields'].has_key(clusterfieldname):
+    for cluster,count in results.facet_counts['facet_fields'][clusterfieldname].iteritems():
+      clusters.append(clusterfieldname+':"'+cluster+'"')
 
   if len(clusters)>0:
 
@@ -81,7 +80,7 @@ def searchclusters(breadcrumbs,topic,source,category,query,clustered,handler,clu
   else:
     cluster_query=orig_query
 
-  results=search(breadcrumbs,topic,source,category,cluster_query,True,clusterfieldname)
+  results=search(breadcrumbs,topic,source,category,cluster_query,True,clusterfieldname,searchhandler)
 
   # sort by cluster size - largest first
 
@@ -138,16 +137,10 @@ def searchcarrot(breadcrumbs,topic,source,category,query,clustered):
 
   return {'clusters':clustered_results,'topics':topics,'sources':sources,'breadcrumbs':breadcrumbs,'categories':categories}
 
-def search(breadcrumbs,topic,source,category,query,clustered,clusterfieldname):
+def search(breadcrumbs,topic,source,category,query,clustered,clusterfieldname,handler):
   facets=get_entities('*:*')
   categories=get_categories('*:*')
   sources=get_feeds('*:*')
-
-  handler=None
-  if clustered:
-    handler=get_handler('/searchclustered')
-  else:
-    handler=get_handler('/searchunclustered')
  
   if (topic is not None) or (source is not None) or (category is not None):
     if len(query)>0:
@@ -169,13 +162,14 @@ def search(breadcrumbs,topic,source,category,query,clustered,clusterfieldname):
 
   clustered_results=[]
   if clustered:
-    for group in results.grouped[clusterfieldname]['groups']:
-      doclist=group['doclist']
-      root=doclist[0]
-      clustered_results.append(root)
-      if len(doclist)>0:
-        root['similar']=doclist[1:]
-    results=clustered_results
+    if results.grouped.has_key(clusterfieldname):
+      for group in results.grouped[clusterfieldname]['groups']:
+        doclist=group['doclist']
+        root=doclist[0]
+        clustered_results.append(root)
+        if len(doclist)>0:
+          root['similar']=doclist[1:]
+      results=clustered_results
 
   return {'results':results,'entities':entities  ,'topics':topics,'sources':sources,'breadcrumbs':breadcrumbs,'categories':categories}
 
@@ -272,7 +266,8 @@ class MahoutHandler(tornado.web.RequestHandler):
 
     handler=get_handler('/searchmahoutclusters')
     clusterfieldname="mahoutclusterid"
-    results=searchclusters(breadcrumbs,topic,source,category,query,True,handler,clusterfieldname)
+    searchhandler=get_handler('/searchmahoutclustered')
+    results=searchclusters(breadcrumbs,topic,source,category,query,True,handler,clusterfieldname,searchhandler)
 
     self.render('templates/mahout.html',query=query,results=results)
 
@@ -321,7 +316,8 @@ class ClustersHandler(tornado.web.RequestHandler):
 
     handler=get_handler('/searchclusters')
     clusterfieldname="clusterid"
-    results=searchclusters(breadcrumbs,topic,source,category,query,True,handler,clusterfieldname)
+    searchhandler=get_handler('/searchclustered')
+    results=searchclusters(breadcrumbs,topic,source,category,query,True,handler,clusterfieldname,searchhandler)
 
     self.render('templates/index.html',query=query,results=results)
 
@@ -372,7 +368,12 @@ class SearchHandler(tornado.web.RequestHandler):
       breadcrumbs[len(breadcrumbs)-1]['active']=True
 
 
-    results=search(breadcrumbs,topic,source,category,query,clustered,'clusterid')
+    
+    if clustered:
+      handler=get_handler('/searchclustered')
+    else:
+      handler=get_handler('/searchunclustered')
+    results=search(breadcrumbs,topic,source,category,query,clustered,'clusterid',handler)
 
     self.render('templates/index.html',query=query,results=results)
 
@@ -382,8 +383,10 @@ class MoreLikeThisHandler(tornado.web.RequestHandler):
     id=self.get_argument('id')
     mlt_results=get_handler('/mlt')('id:"'+id+'"')
 
-   
-    results=search([],None,None,None,'id:"'+id+'"',False,'clusterid')
+  
+    
+    handler=get_handler('/searchunclustered')
+    results=search([],None,None,None,'id:"'+id+'"',False,'clusterid',handler)
 
     if len(results['results'].results)>0:
       match=results['results'].results[0]

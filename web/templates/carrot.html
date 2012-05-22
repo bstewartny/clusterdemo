@@ -87,8 +87,8 @@
           <a class="brand" href="#">Clustering Demo</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li><a href="/">Home</a></li>
-              <li><a href="/carrot">Mahout Clusters</a></li>
+              <li><a href='/?q={{escape(query)}}'>Py Clusters</a></li>
+              <li><a href='/mahout?q={{escape(query)}}'>Mahout Clusters</a></li>
               <li class="active"><a href="/carrot">Carrot Clusters</a></li>
             </ul>
             <form method="get" action="" class="navbar-search pull-right">
@@ -101,7 +101,7 @@
     <div class="container-fluid">
       <ul class="breadcrumb">
         <li>
-        <a href="/">Home</a> <span class="divider">/</span>
+        <a href="/carrot">Carrot Clusters</a> <span class="divider">/</span>
         </li>
         {% for breadcrumb in results['breadcrumbs'] %}
         {% if breadcrumb['active'] %}
